@@ -1,12 +1,197 @@
-html, body { margin: 0; height: 100%; background: #f2f0f4; color: #1d1b22; font: 15px/1.4 system-ui, sans-serif; }
-.app { display: flex; gap: 32px; align-items: center; justify-content: center; height: 100%; padding: 24px; box-sizing: border-box; }
-.controls { display: flex; flex-direction: column; gap: 14px; width: 280px; }
-.controls h1 { margin: 0; font-size: 28px; }
-.controls p { margin: 0; color: #5c5866; }
-label { display: flex; flex-direction: column; gap: 6px; font-weight: 600; }
-input[type=text] { font: inherit; padding: 8px; border: 1px solid #c9c4d1; border-radius: 6px; }
-button { font: inherit; font-weight: 700; padding: 10px; border: 0; border-radius: 6px; background: #1d1b22; color: #fff; cursor: pointer; }
-canvas { width: min(70vh, 60vw); height: min(70vh, 60vw); box-shadow: 0 8px 30px rgba(0, 0, 0, 0.2); }
-body.shot-cover .controls { display: none; }
-body.shot-cover .app { padding: 0; }
-body.shot-cover canvas { width: 100vw; height: 100vh; box-shadow: none; }
+@font-face {
+  font-family: "Anton";
+  src: url("fonts/Anton-Regular.ttf") format("truetype");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Archivo Black";
+  src: url("fonts/ArchivoBlack-Regular.ttf") format("truetype");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+* { box-sizing: border-box; }
+html, body { margin: 0; padding: 0; }
+body {
+  background: #0b0b12;
+  color: #f5f1e8;
+  font-family: "Archivo Black", "Arial Black", sans-serif;
+  font-size: 14px;
+}
+
+#app { max-width: 1440px; margin: 0 auto; padding: 18px 22px 26px; }
+
+.topbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
+  border-bottom: 3px solid #ff5e3a;
+  padding-bottom: 14px;
+  margin-bottom: 18px;
+}
+.brand { display: flex; gap: 14px; align-items: center; }
+.brand-mark {
+  font-family: Anton, sans-serif;
+  font-size: 34px;
+  line-height: 1;
+  color: #0b0b12;
+  background: linear-gradient(135deg, #ff5e3a, #ff2e88 55%, #ffb347);
+  padding: 10px 12px;
+  border-radius: 6px;
+}
+.brand h1 {
+  font-family: Anton, sans-serif;
+  font-weight: 400;
+  font-size: 30px;
+  letter-spacing: 2px;
+  margin: 0;
+}
+.brand p { margin: 4px 0 0; color: #9a93a8; font-family: Arial, sans-serif; font-size: 13px; }
+.badges { display: flex; gap: 8px; flex-wrap: wrap; }
+.badge {
+  border: 1px solid #ff5e3a;
+  color: #ffb347;
+  border-radius: 999px;
+  padding: 6px 10px;
+  font-size: 11px;
+  letter-spacing: 1px;
+}
+.badge.hot { background: #ff5e3a; color: #fff7ec; border-color: #ff5e3a; }
+
+.editor { display: grid; grid-template-columns: 380px 1fr; gap: 20px; align-items: start; }
+.controls { display: flex; flex-direction: column; gap: 16px; }
+.group {
+  background: #14141f;
+  border: 1px solid #26263a;
+  border-radius: 10px;
+  padding: 14px;
+}
+.group h2 { font-family: Anton, sans-serif; font-weight: 400; letter-spacing: 1px; font-size: 17px; margin: 0 0 10px; color: #ffb347; }
+.group h2:not(:first-child) { margin-top: 16px; }
+.hint { color: #9a93a8; font-family: Arial, sans-serif; font-size: 12px; margin: 0 0 10px; line-height: 1.5; }
+
+.slots { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+.slot {
+  background: #0b0b12;
+  border: 1px solid #33334a;
+  border-radius: 8px;
+  padding: 4px;
+  cursor: pointer;
+  color: #f5f1e8;
+  font-family: Arial, sans-serif;
+  font-size: 10px;
+}
+.slot canvas { width: 100%; height: 56px; object-fit: cover; display: block; border-radius: 4px; }
+.slot span { display: block; padding-top: 4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.slot.empty { border-style: dashed; }
+.row { display: flex; gap: 8px; margin-top: 10px; }
+.upload-btn, .ghost-btn {
+  flex: 1;
+  text-align: center;
+  background: #ff5e3a;
+  color: #fff7ec;
+  border: 0;
+  border-radius: 8px;
+  padding: 10px 8px;
+  font-family: "Archivo Black", sans-serif;
+  font-size: 12px;
+  cursor: pointer;
+}
+.ghost-btn { background: transparent; border: 1px solid #ff5e3a; color: #ffb347; }
+
+.chips { display: flex; gap: 8px; flex-wrap: wrap; }
+.chip {
+  background: #0b0b12;
+  border: 1px solid #33334a;
+  color: #f5f1e8;
+  border-radius: 999px;
+  padding: 8px 12px;
+  font-family: "Archivo Black", sans-serif;
+  font-size: 12px;
+  cursor: pointer;
+}
+.chip.on { background: #ff5e3a; border-color: #ff5e3a; color: #fff7ec; }
+
+.field { display: block; font-family: Arial, sans-serif; font-size: 12px; color: #9a93a8; margin-bottom: 10px; }
+.field input {
+  display: block;
+  width: 100%;
+  margin-top: 5px;
+  background: #0b0b12;
+  border: 1px solid #33334a;
+  border-radius: 8px;
+  color: #f5f1e8;
+  padding: 10px;
+  font-family: "Archivo Black", sans-serif;
+  font-size: 14px;
+  text-transform: uppercase;
+}
+.slider { display: block; font-family: Arial, sans-serif; font-size: 12px; color: #9a93a8; margin-bottom: 10px; }
+.slider span { color: #ffb347; float: right; font-family: "Archivo Black", sans-serif; }
+.slider input { width: 100%; margin-top: 6px; accent-color: #ff5e3a; }
+
+.export-btn {
+  background: linear-gradient(135deg, #ff5e3a, #ff2e88);
+  color: #fff7ec;
+  border: 0;
+  border-radius: 10px;
+  padding: 16px;
+  font-family: Anton, sans-serif;
+  font-size: 22px;
+  letter-spacing: 2px;
+  cursor: pointer;
+}
+.status { color: #9a93a8; font-family: Arial, sans-serif; font-size: 12px; margin: 0; line-height: 1.5; }
+
+.preview-pane { position: sticky; top: 12px; }
+.preview-head {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  font-size: 12px;
+  letter-spacing: 1px;
+  color: #ffb347;
+  margin-bottom: 8px;
+}
+#preview {
+  width: 100%;
+  height: auto;
+  display: block;
+  border-radius: 10px;
+  border: 1px solid #26263a;
+  background: #14141f;
+  cursor: pointer;
+}
+.slot:hover { border-color: #ff5e3a; }
+.preview-note { color: #9a93a8; font-family: Arial, sans-serif; font-size: 12px; }
+
+.foot {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  color: #9a93a8;
+  font-family: Arial, sans-serif;
+  font-size: 12px;
+  border-top: 1px solid #26263a;
+  margin-top: 20px;
+  padding-top: 14px;
+}
+
+/* Shot mode: only the exported cover, full-bleed on a dark stage. */
+body.shot-mode #app { display: none; }
+body.shot-mode { background: #0b0b12; }
+#shotView { margin: 0; }
+#shotView[hidden] { display: none; }
+body.shot-mode #shotView { display: block; }
+#shotImg { display: block; width: 100vw; height: 100vh; object-fit: contain; }
+
+@media (max-width: 900px) {
+  .editor { grid-template-columns: 1fr; }
+  .preview-pane { position: static; }
+}

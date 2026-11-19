@@ -1,5 +1,1 @@
-[
-  { "name": "1-cover.jpg", "query": "?shot=cover&photo=pier&caption=Sunset%20Heist", "w": 1080, "h": 1080 },
-  { "name": "2-editor.jpg", "query": "?shot=editor&photo=boulevard&caption=Boulevard%20Queen", "w": 1280, "h": 720 },
-  { "name": "3-cover.jpg", "query": "?shot=cover&photo=boulevard&caption=Boulevard%20Queen", "w": 1080, "h": 1080 }
-]
+[{"h":720,"name":"1-cover.jpg","query":"?shot=cover&photo=pier&size=1920x1080&caption=SUNSET%20HEIST&sub=ONE%20LAST%20SCORE","w":1280},{"h":720,"name":"2-editor.jpg","query":"?shot=editor&photo=boulevard&size=1920x1080&caption=BOULEVARD%20QUEEN","w":1280},{"h":1280,"name":"3-cover-portrait.jpg","query":"?shot=portrait&photo=pier&size=1080x1350&caption=SUNSET%20HEIST&sub=ONE%20LAST%20SCORE","w":1024},{"h":720,"name":"4-sizes.jpg","query":"?shot=editor&photo=pier&size=1920x1080&caption=SUNSET%20HEIST","w":1280}]
