@@ -1,105 +1,68 @@
-// Vice Cover Maker v2 — configuration: export sizes, sample photos, colour
-// grades and the six-panel mosaic layouts. Nothing here touches the network:
-// every sample is a file under app/samples/ and every font a file under
-// app/fonts/.
+// Vice Cover Maker v2.1 — shared constants: samples, export sizes, grades.
+// All assets are local files under app/; the app makes no network request.
 
-/** The three post sizes the cover exports to, in pixels. */
-export const SIZES = {
-  square: { w: 1080, h: 1080, label: '1080 × 1080' },
-  portrait: { w: 1080, h: 1350, label: '1080 × 1350' },
-  landscape: { w: 1920, h: 1080, label: '1920 × 1080' },
-};
-
-/** Sample photos shipped with the app. The first six are the default panel
- *  assignment, in panel order: hero, top-right 1, top-right 2, bottom 1-3.
- *  boulevard and pier are the kit starter samples; the other four were made
- *  for this entry with an image model and are free to use. */
 export const SAMPLES = [
-  { id: 'skyline', file: 'samples/skyline.jpg', label: 'Skyline dusk' },
-  { id: 'convertible', file: 'samples/convertible.jpg', label: 'Convertible' },
-  { id: 'lifeguard', file: 'samples/lifeguard.jpg', label: 'Lifeguard tower' },
-  { id: 'boulevard', file: 'samples/boulevard.jpg', label: 'Boulevard' },
-  { id: 'pier', file: 'samples/pier.jpg', label: 'Pier' },
-  { id: 'marina', file: 'samples/marina.jpg', label: 'Marina' },
+  { id: 'skyline', label: 'Skyline', file: 'samples/skyline.jpg' },
+  { id: 'convertible', label: 'Convertible', file: 'samples/convertible.jpg' },
+  { id: 'lifeguard', label: 'Lifeguard', file: 'samples/lifeguard.jpg' },
+  { id: 'boulevard', label: 'Boulevard', file: 'samples/boulevard.jpg' },
+  { id: 'pier', label: 'Pier', file: 'samples/pier.jpg' },
+  { id: 'marina', label: 'Marina', file: 'samples/marina.jpg' },
 ];
 
-/** Font family names, matching the @font-face rules in style.css. */
-export const FONTS = {
-  display: 'Anton',
-  body: '"Archivo Black"',
-};
+export const SIZES = [
+  { id: 'square', label: 'Square 1080 × 1080', w: 1080, h: 1080 },
+  { id: 'portrait', label: 'Portrait 1080 × 1350', w: 1080, h: 1350 },
+  { id: 'wide', label: 'Wide 1920 × 1080', w: 1920, h: 1080 },
+];
 
-/** Colour grades. Each grade tints the photos, paints the caption band and
- *  sets the halftone strength, so one tap re-grades the whole cover. */
 export const GRADES = {
   sunset: {
-    label: 'Sunset',
-    tintTop: 'rgba(255, 122, 61, 0)',
-    tintBottom: 'rgba(194, 39, 124, 0.55)',
-    band: ['#ff7a3d', '#c2277c', '#3b1d5e'],
-    halftone: 0.5,
-    accent: '#ffd166',
+    name: 'Sunset',
+    sky: ['#ff5e7a', '#ff9a3d', '#7b2d8b'],
+    tint: 'rgba(255, 90, 120, 0.20)',
+    line: '#ff2e88',
+    dot: 'rgba(255, 255, 255, 0.16)',
+    captionShadow: '#ff2e88',
   },
   neon: {
-    label: 'Neon',
-    tintTop: 'rgba(0, 229, 255, 0)',
-    tintBottom: 'rgba(255, 0, 128, 0.5)',
-    band: ['#00e5ff', '#7b2ff7', '#ff0080'],
-    halftone: 0.65,
-    accent: '#00e5ff',
+    name: 'Neon',
+    sky: ['#7b2ff7', '#00e5ff', '#ff2e88'],
+    tint: 'rgba(80, 40, 255, 0.22)',
+    line: '#00e5ff',
+    dot: 'rgba(0, 229, 255, 0.18)',
+    captionShadow: '#00e5ff',
   },
   midnight: {
-    label: 'Midnight',
-    tintTop: 'rgba(20, 20, 80, 0)',
-    tintBottom: 'rgba(10, 10, 50, 0.6)',
-    band: ['#2b2d6e', '#14143a', '#050514'],
-    halftone: 0.35,
-    accent: '#b388ff',
+    name: 'Midnight',
+    sky: ['#0b1035', '#1b2a6b', '#3d1a5c'],
+    tint: 'rgba(20, 30, 90, 0.28)',
+    line: '#8fa8ff',
+    dot: 'rgba(255, 255, 255, 0.10)',
+    captionShadow: '#1b2a6b',
   },
 };
 
-/**
- * Six-panel mosaic, as fractions of the cover. Returns the six photo rects
- * plus the caption band rect, in panel order: hero, top-right 1, top-right 2,
- * bottom 1, bottom 2, bottom 3. The mosaic changes shape with the size so
- * the hero always dominates and no panel is ever a sliver.
- */
-export function layoutFor(sizeKey) {
-  if (sizeKey === 'landscape') {
-    return {
-      panels: [
-        { x: 0, y: 0, w: 0.44, h: 0.78 },
-        { x: 0.44, y: 0, w: 0.1867, h: 0.39 },
-        { x: 0.6267, y: 0, w: 0.1867, h: 0.39 },
-        { x: 0.8133, y: 0, w: 0.1867, h: 0.39 },
-        { x: 0.44, y: 0.39, w: 0.28, h: 0.39 },
-        { x: 0.72, y: 0.39, w: 0.28, h: 0.39 },
-      ],
-      band: { x: 0, y: 0.78, w: 1, h: 0.22 },
-    };
-  }
-  if (sizeKey === 'portrait') {
-    return {
-      panels: [
-        { x: 0, y: 0, w: 0.66, h: 0.56 },
-        { x: 0.66, y: 0, w: 0.34, h: 0.28 },
-        { x: 0.66, y: 0.28, w: 0.34, h: 0.28 },
-        { x: 0, y: 0.56, w: 0.3333, h: 0.2 },
-        { x: 0.3333, y: 0.56, w: 0.3333, h: 0.2 },
-        { x: 0.6666, y: 0.56, w: 0.3334, h: 0.2 },
-      ],
-      band: { x: 0, y: 0.76, w: 1, h: 0.24 },
-    };
-  }
-  return {
-    panels: [
-      { x: 0, y: 0, w: 0.66, h: 0.6 },
-      { x: 0.66, y: 0, w: 0.34, h: 0.3 },
-      { x: 0.66, y: 0.3, w: 0.34, h: 0.3 },
-      { x: 0, y: 0.6, w: 0.3333, h: 0.2 },
-      { x: 0.3333, y: 0.6, w: 0.3333, h: 0.2 },
-      { x: 0.6666, y: 0.6, w: 0.3334, h: 0.2 },
-    ],
-    band: { x: 0, y: 0.8, w: 1, h: 0.2 },
-  };
+export const DEFAULT_CAPTION = 'VICE CITY';
+export const DEFAULT_SUB = 'A SUNSET STORY';
+export const BADGE_TOP = 'EST. 2026';
+export const BADGE_BOTTOM = 'LEONIDA';
+export const PILL_TEXT = '6 PANELS \u2022 3 SIZES';
+
+// Gutter between panels, in pixels, for a canvas of the given width.
+export function gutterFor(width) {
+  return Math.max(6, Math.round(width * 0.009));
 }
+
+export const EXPORT_PREFIX = 'vice-cover';
+
+// Panel rectangles as fractions of the canvas: hero top-left, two stacked
+// on the right, three across the bottom. Works for square, portrait and wide.
+export const PANEL_LAYOUT = [
+  { x: 0, y: 0, w: 0.611, h: 0.611 },
+  { x: 0.611, y: 0, w: 0.389, h: 0.301 },
+  { x: 0.611, y: 0.31, w: 0.389, h: 0.301 },
+  { x: 0, y: 0.611, w: 0.333, h: 0.389 },
+  { x: 0.333, y: 0.611, w: 0.334, h: 0.389 },
+  { x: 0.667, y: 0.611, w: 0.333, h: 0.389 },
+];

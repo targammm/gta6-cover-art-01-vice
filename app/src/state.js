@@ -1,74 +1,71 @@
-// Vice Cover Maker v2 — the cover's state: which photo sits in each of the
-// six panels, how each photo is cropped, the caption words and the grade.
-// The state is plain data so the editor, the cover renderer and the
-// screenshot scenes all share one source of truth.
-import { SAMPLES } from './config.js';
+// Vice Cover Maker v2.1 — editor state. Plain data, no DOM here, so the
+// cover renderer can be driven from the editor, from a screenshot query,
+// or from an export without touching the page.
 
-/** The default cover: six different photos, one per panel, sunset grade. */
-export function defaultState() {
+import { SAMPLES, SIZES, GRADES, DEFAULT_CAPTION, DEFAULT_SUB } from './config.js';
+
+// One panel: which photo it shows, and how the photo is cropped inside it.
+// zoom 1 fits the photo to the panel; ox/oy shift the crop in panel units.
+export function defaultPanels() {
+  const order = ['skyline', 'convertible', 'lifeguard', 'boulevard', 'pier', 'marina'];
+  return order.map((id) => ({ photo: id, zoom: 1, ox: 0, oy: 0 }));
+}
+
+export function createState() {
   return {
-    caption: 'VICE CITY',
-    subcaption: 'A SUNSET STORY',
-    badge: 'EST. 2026 • LEONIDA',
+    panels: defaultPanels(),
+    selected: 0,
     grade: 'sunset',
     size: 'square',
-    selected: 0,
-    panels: SAMPLES.map((s) => ({
-      photo: s.id,
-      zoom: 1,
-      offsetX: 0,
-      offsetY: 0,
-    })),
+    caption: DEFAULT_CAPTION,
+    sub: DEFAULT_SUB,
+    // Uploaded photos, keyed by a generated id, with their object URL image.
+    uploads: {},
+    uploadSeq: 0,
   };
 }
 
-/** A panel's crop, clamped so the sliders can never push the photo out. */
-export function clampCrop(panel) {
-  panel.zoom = Math.min(2.5, Math.max(1, panel.zoom || 1));
-  panel.offsetX = Math.min(0.5, Math.max(-0.5, panel.offsetX || 0));
-  panel.offsetY = Math.min(0.5, Math.max(-0.5, panel.offsetY || 0));
-  return panel;
+export function sizeOf(state) {
+  return SIZES.find((s) => s.id === state.size) ?? SIZES[0];
 }
 
-/** Fill every panel with one photo (kept as its own action: the judge's
- *  "any photo" criterion is about one photo filling several panels). */
-export function fillAllPanels(state, photoId) {
-  state.panels.forEach((p) => { p.photo = photoId; });
-  return state;
+export function gradeOf(state) {
+  return GRADES[state.grade] ?? GRADES.sunset;
 }
 
-/** Rotate the six samples one step across the panels, for a fresh cover. */
-export function shufflePanels(state) {
-  const ids = state.panels.map((p) => p.photo);
-  const last = ids.pop();
-  ids.unshift(last);
-  state.panels.forEach((p, i) => { p.photo = ids[i]; });
-  return state;
+export function photoFile(state, panel) {
+  const up = state.uploads[panel.photo];
+  if (up) return up.url;
+  const sample = SAMPLES.find((s) => s.id === panel.photo);
+  return sample ? sample.file : SAMPLES[0].file;
 }
 
-/** Serialise the state into a URL query, so a cover can be re-opened. */
-export function stateToQuery(state) {
-  const q = new URLSearchParams();
-  q.set('caption', state.caption);
-  q.set('sub', state.subcaption);
-  q.set('badge', state.badge);
-  q.set('grade', state.grade);
-  q.set('size', state.size);
-  q.set('photos', state.panels.map((p) => p.photo).join(','));
-  return q.toString();
+export function photoLabel(state, panel) {
+  const up = state.uploads[panel.photo];
+  if (up) return up.label;
+  const sample = SAMPLES.find((s) => s.id === panel.photo);
+  return sample ? sample.label : panel.photo;
 }
 
-/** Read a state back from a URL query, falling back to the defaults. */
-export function stateFromQuery(query) {
-  const state = defaultState();
-  if (query.get('caption')) state.caption = query.get('caption').slice(0, 40);
-  if (query.get('sub')) state.subcaption = query.get('sub').slice(0, 60);
-  if (query.get('badge')) state.badge = query.get('badge').slice(0, 40);
-  if (query.get('grade')) state.grade = query.get('grade');
-  if (query.get('size')) state.size = query.get('size');
-  const photos = (query.get('photos') || '').split(',').filter(Boolean);
-  photos.forEach((id, i) => {
-    if (i < 6 && SAMPLES.some((s) => s.id === id)) state.panels[i].photo = id;
-  });
-  return state;
+// All photo choices the picker offers: the six samples plus uploads.
+export function photoChoices(state) {
+  const choices = SAMPLES.map((s) => ({ id: s.id, label: s.label }));
+  for (const [id, up] of Object.entries(state.uploads)) {
+    choices.push({ id, label: up.label });
+  }
+  return choices;
+}
+
+// Reset one panel to its default photo and crop.
+export function resetPanel(state, index) {
+  const order = ['skyline', 'convertible', 'lifeguard', 'boulevard', 'pier', 'marina'];
+  state.panels[index] = { photo: order[index % order.length], zoom: 1, ox: 0, oy: 0 };
+}
+
+// Point a panel at a photo and reset its crop.
+export function setPanelPhoto(state, index, photoId) {
+  state.panels[index].photo = photoId;
+  state.panels[index].zoom = 1;
+  state.panels[index].ox = 0;
+  state.panels[index].oy = 0;
 }

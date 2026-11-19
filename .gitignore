@@ -1,4 +1,3 @@
-# Build output (main.ts writes here) and local tooling — never committed.
 out/
 out2/
 node_modules/

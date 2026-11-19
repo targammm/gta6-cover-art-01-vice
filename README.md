@@ -1,81 +1,64 @@
-# Vice Cover Maker v2
+# Vice Cover Maker v2.1
 
-A GTA-style cover art maker: turn photos and a caption into a six-panel
-Vice City sunset poster, exported as a PNG to share. Open `app/index.html`
-in desktop Chrome — the app is plain static files, works with no network,
-and never uploads your photos.
+A six-panel sunset cover maker for the make.fun "Make GTA 6 Cover Art"
+competition. Pick a photo for each of six panels, set a bold caption, pick
+a grade and an export size, and download a PNG — all offline, in the
+browser. No photo ever leaves your machine.
 
-## The cover
+## What it makes
 
-- **Six panels, six different photos** — one large hero panel plus five
-  smaller ones in a mosaic, each with its own photo, crop and zoom.
-- **Sunset halftone grade** — a pink-orange-purple sunset tint, halftone dots
-  and film grain over every panel, with Neon and Midnight grades one tap away.
-- **Bold caption lettering** — a big Anton caption across a gradient band,
-  a letter-spaced sub-caption, and a circular `EST. 2026 • LEONIDA` badge.
-- **Three post sizes** — `1080 × 1080`, `1080 × 1350` and `1920 × 1080`,
-  exported as PNG at full resolution.
+A cover built from six different photos: one large hero panel, two stacked
+panels on the right, and three panels across the bottom. A sunset wash,
+halftone dots, fine grain and a neon outline grade the whole cover. The
+hero carries a bold caption (default `VICE CITY`) and sub-caption
+(`A SUNSET STORY`), a circular `EST. 2026 • LEONIDA` badge, and a
+`6 PANELS • 3 SIZES` pill.
 
-## How to use it
+## Features
 
-1. Pick a panel in the strip (or click it on the preview), then choose a
-   sample photo, upload your own photo, or fill all six panels with one
-   photo.
-2. Crop the selected panel with the Zoom / Move X / Move Y sliders.
-3. Type the caption, sub-caption and badge text; pick a grade and a size.
-4. Press **Export PNG** — the cover downloads at the size you picked.
+- Six photo panels, each with its own photo, zoom and crop offset.
+- Six built-in sample photos (Vice City style, made with an image model),
+  plus upload-your-own-photo per panel (read locally with FileReader).
+- Caption and sub-caption editing, three grades (Sunset, Neon, Midnight).
+- Fill-all, shuffle and per-panel reset.
+- Export PNG at 1080 × 1080, 1080 × 1350 or 1920 × 1080.
 
-Shuffle re-deals the six sample photos across the panels for a fresh cover.
-Clicking a panel on the preview selects it for cropping.
+## How to use
 
-## Files
+Serve the app and open it in a desktop browser:
 
-- `app/index.html` — the page; `app/style.css` — the dark Vice theme.
-- `app/src/config.js` — sizes, samples, grades, panel layouts.
-- `app/src/state.js` — the cover state (panels, caption, grade, size).
-- `app/src/cover.js` — the renderer: mosaic, halftone, caption band, badge.
-- `app/src/editor.js` — panel strip, sliders, upload, grade/size pickers.
-- `app/src/main.js` — page wiring, export, screenshot scenes.
-- `app/src/shots.js` — the four fixed `?shot=` scenes for screenshots.
-- `app/samples/` — six photos: `skyline`, `convertible`, `lifeguard`,
-  `boulevard`, `pier`, `marina`.
-- `app/fonts/` — Anton and Archivo Black under the SIL Open Font License.
-- `main.ts` — copies `app/` and `screenshots/` to `/output` and writes
-  `dossier.json` with the vendored make.fun library.
+```
+node serve.ts
+# open http://localhost:8080
+```
+
+1. Click a panel thumbnail under the preview to select that panel.
+2. Pick its photo from the dropdown, or upload your own.
+3. Crop with the zoom and offset sliders.
+4. Type a caption and sub-caption, pick a grade and an export size.
+5. Press **Export PNG** — the file downloads at the chosen size.
 
 ## Screenshots
 
-`screenshots/` holds four JPEGs, all rendered by the app itself:
+`shots.json` lists the four screenshots (the first by name is the cover):
+`1-cover.jpg` is the exported square cover, `2-editor.jpg` the editor,
+`3-cover-portrait.jpg` the portrait cover, `4-sizes.jpg` the three sizes.
 
-1. `1-cover.jpg` — the exported square cover (1080 × 1080).
-2. `2-editor.jpg` — the editor with photos loaded (1280 × 720).
-3. `3-cover-portrait.jpg` — the exported portrait cover (1080 × 1350).
-4. `4-sizes.jpg` — the three export sizes side by side (1280 × 720).
+## Fonts and licence
 
-`shots.json` lists the `?shot=` scene behind each screenshot; serving the
-app with `node serve.ts` and opening those URLs reproduces them.
+- Anton and Archivo Black, under the SIL Open Font License 1.1 — see
+  `app/fonts/OFL.txt`. Both font files live under `app/fonts/`.
+- Sample photos were made with an image model for this entry and are free
+  to use. The app works fully offline: no network request is made.
 
-## Photos and fonts
+## Build
 
-- The `boulevard` and `pier` samples are the kit starter photos. The
-  `skyline`, `convertible`, `lifeguard` and `marina` photos were made for
-  this entry with an image model and are free to use — no real person, no
-  Rockstar artwork, no game asset.
-- Fonts are Anton and Archivo Black, both under the SIL Open Font License
-  (see `app/fonts/OFL.txt`). Nothing in this app is a Rockstar Games logo,
-  wordmark, official artwork, character or font.
+`main.ts` (Node 22, standard library only) copies `app/` and `screenshots/`
+to `/output` and writes `/output/dossier.json`. Run it twice to check the
+output is byte-identical:
 
-## Run it
-
-```sh
-node serve.ts        # serves app/ on http://localhost:8080
 ```
-
-Hand the entry in (outside the grader, `MAKEFUN_OUTPUT_DIR` stands in for
-`/output`):
-
-```sh
-mkdir -p out && MAKEFUN_OUTPUT_DIR=out node main.ts
+MAKEFUN_OUTPUT_DIR=out node main.ts
+MAKEFUN_OUTPUT_DIR=out2 node main.ts
+diff -r out out2
 ```
-
-Running `main.ts` twice into two directories produces byte-identical output.
