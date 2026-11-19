@@ -1,1 +1,6 @@
-[{"h":720,"name":"1-cover.jpg","query":"?shot=cover&photo=pier&caption=Sunset%20Heist","w":1280},{"h":720,"name":"2-editor.jpg","query":"?shot=editor&photo=boulevard&caption=Boulevard%20Queen","w":1280},{"h":1280,"name":"3-cover-portrait.jpg","query":"?shot=portrait&photo=pier&caption=Sunset%20Heist","w":1024},{"h":720,"name":"4-sizes.jpg","query":"?shot=sizes&photo=boulevard&caption=Boulevard%20Queen","w":1280}]
+[
+  {"h": 1080, "name": "1-cover.jpg", "query": "?shot=cover&caption=VICE%20CITY&grade=sunset&size=square", "w": 1080},
+  {"h": 720, "name": "2-editor.jpg", "query": "?shot=editor&caption=VICE%20CITY&grade=sunset", "w": 1280},
+  {"h": 1280, "name": "3-cover-portrait.jpg", "query": "?shot=portrait&caption=VICE%20CITY&grade=sunset&size=portrait", "w": 1024},
+  {"h": 720, "name": "4-sizes.jpg", "query": "?shot=sizes&caption=VICE%20CITY&grade=sunset", "w": 1280}
+]

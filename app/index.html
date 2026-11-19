@@ -3,75 +3,55 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Vice Cover Maker — GTA-style cover art studio</title>
-<meta name="description" content="Turn your photos into multi-panel GTA-style cover art. Offline, three post sizes, one click to PNG.">
-<link rel="stylesheet" href="style.css">
+<title>Vice Cover Maker v2 — six-panel GTA-style cover art</title>
+<link rel="stylesheet" href="./style.css">
 </head>
 <body>
-<header class="top">
-  <div class="brand">
-    <h1>VICE COVER MAKER</h1>
-    <p>GTA-style cover art studio &middot; multi-panel &middot; sunset / neon grade &middot; offline</p>
-  </div>
-  <div class="top-actions">
-    <button id="resetBtn" type="button" class="ghost">Reset preset</button>
-    <button id="exportBtn" type="button" class="primary">Export PNG</button>
-  </div>
-</header>
-
-<main>
-  <section class="stage-col">
-    <div id="stageWrap" class="stage-wrap">
-      <canvas id="stage" width="1920" height="1080" aria-label="Live cover preview"></canvas>
-      <p id="sizeNote" class="size-note">Preview loading&hellip;</p>
+<main class="app">
+  <section class="controls" aria-label="Cover controls">
+    <h1>Vice Cover Maker</h1>
+    <p class="tagline">Six photos, one sunset, your caption — a GTA-style cover in three post sizes.</p>
+    <label>Caption <input id="caption" type="text" maxlength="40" value="VICE CITY"></label>
+    <label>Sub-caption <input id="subcaption" type="text" maxlength="60" value="A SUNSET STORY"></label>
+    <label>Badge <input id="badge" type="text" maxlength="40" value="EST. 2026 • LEONIDA"></label>
+    <div class="group">
+      <span class="group-label">Grade</span>
+      <div class="btn-row">
+        <button type="button" data-grade="sunset" class="active">Sunset</button>
+        <button type="button" data-grade="neon">Neon</button>
+        <button type="button" data-grade="midnight">Midnight</button>
+      </div>
     </div>
-    <p class="hint">Drag a panel to pan its photo &middot; scroll over it to zoom &middot; click a panel card to select it. Photos never leave your machine.</p>
+    <div class="group">
+      <span class="group-label">Export size</span>
+      <div class="btn-row">
+        <button type="button" data-size="square" class="active">1080 × 1080</button>
+        <button type="button" data-size="portrait">1080 × 1350</button>
+        <button type="button" data-size="landscape">1920 × 1080</button>
+      </div>
+    </div>
+    <div class="group">
+      <span class="group-label">Panels — click a photo, then crop it</span>
+      <div id="panelStrip" class="strip"></div>
+    </div>
+    <div class="group sliders">
+      <label>Zoom <input id="zoom" type="range" min="1" max="2.5" step="0.01" value="1"> <span id="zoomVal">1.00×</span></label>
+      <label>Move X <input id="offsetX" type="range" min="-0.5" max="0.5" step="0.01" value="0"> <span id="offsetXVal">0%</span></label>
+      <label>Move Y <input id="offsetY" type="range" min="-0.5" max="0.5" step="0.01" value="0"> <span id="offsetYVal">0%</span></label>
+    </div>
+    <label class="upload">Upload a photo for this panel <input id="photoFile" type="file" accept="image/*"></label>
+    <label>Fill all panels <select id="fillAll"></select></label>
+    <div class="btn-row">
+      <button id="shuffle" type="button">Shuffle photos</button>
+      <button id="export" type="button" class="primary">Export PNG</button>
+    </div>
+    <p id="status" role="status"></p>
+    <p class="fine">Photos stay on your machine. Fonts: Anton + Archivo Black (SIL OFL). No Rockstar art, logo or font.</p>
   </section>
-
-  <aside class="controls">
-    <section class="group">
-      <h2>1 &middot; Layout</h2>
-      <div id="layoutBox" class="seg-row" role="group" aria-label="Layout"></div>
-    </section>
-
-    <section class="group">
-      <h2>2 &middot; Photos — one per panel</h2>
-      <div id="photoBox" class="slots"></div>
-    </section>
-
-    <section class="group">
-      <h2>3 &middot; Caption</h2>
-      <label class="field">Cover caption
-        <input id="captionInput" type="text" value="SUNSET HEIST" maxlength="24" autocomplete="off">
-      </label>
-      <label class="field">Sub-caption
-        <input id="subInput" type="text" value="VICE CITY · 2026" maxlength="40" autocomplete="off">
-      </label>
-      <div id="posBox" class="seg-row" role="group" aria-label="Caption position"></div>
-    </section>
-
-    <section class="group">
-      <h2>4 &middot; Grade &amp; finish</h2>
-      <div id="gradeBox" class="seg-row" role="group" aria-label="Colour grade"></div>
-      <label class="field">Panel gutter
-        <input id="gutterRange" type="range" min="0" max="28" step="1" value="14">
-      </label>
-      <label class="check"><input id="grainToggle" type="checkbox" checked> Film grain</label>
-      <label class="check"><input id="halftoneToggle" type="checkbox"> Halftone dots</label>
-      <label class="check"><input id="vignetteToggle" type="checkbox" checked> Vignette</label>
-    </section>
-
-    <section class="group">
-      <h2>5 &middot; Export size</h2>
-      <div id="sizeBox" class="seg-row" role="group" aria-label="Export size"></div>
-      <p class="fine">PNG, exact post size. Square 1080&times;1080 &middot; Portrait 1080&times;1350 &middot; Wide 1920&times;1080.</p>
-    </section>
-
-    <p class="fine">Fonts: Anton &amp; Archivo Black (SIL Open Font License, files in app/fonts). Sample photos were made with an image model and are free to use.</p>
-  </aside>
+  <section class="preview" aria-label="Cover preview">
+    <canvas id="cover" width="1080" height="1080"></canvas>
+  </section>
 </main>
-
-<div id="toast" class="toast" role="status" aria-live="polite"></div>
-<script type="module" src="src/main.js"></script>
+<script type="module" src="./src/main.js"></script>
 </body>
 </html>

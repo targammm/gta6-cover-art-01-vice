@@ -1,72 +1,117 @@
-// Vice Cover Maker — bootstrap: loads the sample photos, paints the live
-// preview on every state change, and hands screenshot presets to shots.js.
-// The preview canvas always renders at the selected export size, scaled by
-// CSS, so what you see is what the PNG will be.
-import { SIZES } from './config.js';
-import { createStore } from './state.js';
-import { renderCover } from './cover.js';
-import { buildEditor, loadSlotImages } from './editor.js';
-import { applyShotMode, waitForFonts } from './shots.js';
+// Vice Cover Maker v2 — the page wiring: loads the six sample photos and the
+// two local fonts, repaints the preview on every edit, exports the PNG, and
+// serves the fixed ?shot= scenes the screenshots are taken from.
+import { SAMPLES, SIZES, FONTS, layoutFor } from './config.js';
+import { defaultState, stateFromQuery } from './state.js';
+import { drawCover, renderCoverToCanvas, drawSizesSheet } from './cover.js';
+import { createEditor } from './editor.js';
+import { runShot } from './shots.js';
 
-const stage = document.getElementById('stage');
-const stageWrap = document.getElementById('stageWrap');
-const sizeNote = document.getElementById('sizeNote');
+const canvas = document.getElementById('cover');
+const status = document.getElementById('status');
+const state = defaultState();
+const uploads = [null, null, null, null, null, null];
+const sampleImages = {};
 
-const store = createStore();
-store.restore();
-
-const editor = buildEditor({
-  store,
-  stage,
-  onExported: () => {},
-});
-
-let images = {};
-let painting = false;
-
-async function repaint() {
-  if (painting) return;
-  painting = true;
-  try {
-    const state = store.get();
-    images = await loadSlotImages(state, images);
-    editor.setImages(images);
-    const size = SIZES[state.size] || SIZES.wide;
-    if (stage.width !== size.w || stage.height !== size.h) {
-      stage.width = size.w;
-      stage.height = size.h;
-    }
-    const ctx = stage.getContext('2d');
-    renderCover(ctx, state, images, size.w, size.h);
-    sizeNote.textContent = `Preview ${size.w} × ${size.h} — live · drag a panel to pan, scroll to zoom`;
-  } finally {
-    painting = false;
-  }
+/** Loads an image from a URL, resolving once it can be drawn. */
+export function loadImage(url) {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    img.onload = () => resolve(img);
+    img.onerror = reject;
+    img.src = url;
+  });
 }
 
-store.subscribe(() => { void repaint(); });
+let editor = null;
+
+function redraw() {
+  const size = SIZES[state.size];
+  if (canvas.width !== size.w || canvas.height !== size.h) {
+    canvas.width = size.w;
+    canvas.height = size.h;
+  }
+  const images = editor ? editor.getImages() : state.panels.map((p) => sampleImages[p.photo] || null);
+  drawCover(canvas.getContext('2d'), size.w, size.h, state, images);
+}
+
+/** Clicking the preview selects the panel under the cursor. */
+canvas.addEventListener('click', (event) => {
+  const rect = canvas.getBoundingClientRect();
+  const fx = (event.clientX - rect.left) / rect.width;
+  const fy = (event.clientY - rect.top) / rect.height;
+  const layout = layoutFor(state.size);
+  const hit = layout.panels.findIndex((p) => fx >= p.x && fx < p.x + p.w && fy >= p.y && fy < p.y + p.h);
+  if (hit >= 0 && editor) {
+    state.selected = hit;
+    editor.refreshStrip();
+    editor.syncCropInputs();
+    redraw();
+  }
+});
+
+document.getElementById('export').addEventListener('click', () => {
+  const size = SIZES[state.size];
+  const images = editor.getImages();
+  const out = renderCoverToCanvas(state, images, state.size);
+  out.toBlob((blob) => {
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = `vice-cover-${size.w}x${size.h}.png`;
+    a.click();
+    setTimeout(() => URL.revokeObjectURL(a.href), 5000);
+    status.textContent = `Saved vice-cover-${size.w}x${size.h}.png`;
+  }, 'image/png');
+});
 
 async function boot() {
-  await waitForFonts();
-  // Photos first: the cover and sizes presets export with these images, so
-  // they must be loaded before any preset runs.
-  images = await loadSlotImages(store.get(), images);
-  editor.setImages(images);
-  const shot = await applyShotMode(store, images);
-  if (shot === 'cover' || shot === 'portrait') {
-    // The exported PNG already fills the page; nothing else to paint.
-    stageWrap?.remove();
-    return;
+  const query = new URLSearchParams(location.search);
+  const shot = query.get('shot');
+  const shotState = shot ? stateFromQuery(query) : null;
+  if (shotState) Object.assign(state, shotState);
+  await Promise.all(SAMPLES.map(async (s) => {
+    try { sampleImages[s.id] = await loadImage(s.file); } catch (e) { sampleImages[s.id] = null; }
+  }));
+  try {
+    await document.fonts.load(`400 100px ${FONTS.display}`);
+    await document.fonts.load(`400 40px ${FONTS.body}`);
+    await document.fonts.ready;
+  } catch (e) { /* fall back to system fonts if a local font fails */ }
+
+  editor = createEditor({
+    elements: {
+      strip: document.getElementById('panelStrip'),
+      caption: document.getElementById('caption'),
+      subcaption: document.getElementById('subcaption'),
+      badge: document.getElementById('badge'),
+      zoom: document.getElementById('zoom'),
+      offsetX: document.getElementById('offsetX'),
+      offsetY: document.getElementById('offsetY'),
+      zoomVal: document.getElementById('zoomVal'),
+      offsetXVal: document.getElementById('offsetXVal'),
+      offsetYVal: document.getElementById('offsetYVal'),
+      photoFile: document.getElementById('photoFile'),
+      fillAll: document.getElementById('fillAll'),
+      shuffle: document.getElementById('shuffle'),
+      gradeButtons: [...document.querySelectorAll('[data-grade]')],
+      sizeButtons: [...document.querySelectorAll('[data-size]')],
+    },
+    state,
+    sampleImages,
+    uploads,
+    onChange: redraw,
+  });
+  document.getElementById('caption').value = state.caption;
+  document.getElementById('subcaption').value = state.subcaption;
+  document.getElementById('badge').value = state.badge;
+  document.querySelector(`[data-grade="${state.grade}"]`)?.classList.add('active');
+  document.querySelector(`[data-size="${state.size}"]`)?.classList.add('active');
+  redraw();
+  if (shot) {
+    runShot(shot, query, state, editor, redraw, { drawSizesSheet });
+  } else {
+    window.__shotReady = true;
   }
-  await repaint();
-  if (shot === 'sizes') {
-    // The sheet replaced <main>; the stage is gone with it.
-    return;
-  }
-  editor.refreshControls(store.get());
 }
 
-boot().catch((err) => {
-  const note = document.getElementById('sizeNote');
-  if (note) note.textContent = 'Could not start the editor: ' + err.message;
-});
+boot();

@@ -1,157 +1,105 @@
-// Vice Cover Maker — central tuning: every number the cover renderer and the
-// editor UI share lives here, so a tweak in one place moves the whole app.
-// Layouts are functions of (W, H, gutter) returning panel rects; grades are
-// gradient stops + blend modes the renderer applies per panel.
-export const APP_NAME = 'VICE COVER MAKER';
-export const APP_TAG = 'GTA-style cover art studio · offline · multi-panel';
+// Vice Cover Maker v2 — configuration: export sizes, sample photos, colour
+// grades and the six-panel mosaic layouts. Nothing here touches the network:
+// every sample is a file under app/samples/ and every font a file under
+// app/fonts/.
 
+/** The three post sizes the cover exports to, in pixels. */
 export const SIZES = {
-  square: { id: 'square', label: 'Square · 1080 × 1080', w: 1080, h: 1080 },
-  portrait: { id: 'portrait', label: 'Portrait · 1080 × 1350', w: 1080, h: 1350 },
-  wide: { id: 'wide', label: 'Wide · 1920 × 1080', w: 1920, h: 1080 },
+  square: { w: 1080, h: 1080, label: '1080 × 1080' },
+  portrait: { w: 1080, h: 1350, label: '1080 × 1350' },
+  landscape: { w: 1920, h: 1080, label: '1920 × 1080' },
 };
 
-export const PALETTE = {
-  ink: '#0b0b12',
-  panelGap: '#0b0b12',
-  paper: '#f5efe4',
-  magenta: '#ff2e88',
-  cyan: '#00e5ff',
-  amber: '#ffb300',
-  sunset: '#ff7a18',
-  violet: '#7b2fff',
-  lime: '#b6ff2e',
+/** Sample photos shipped with the app. The first six are the default panel
+ *  assignment, in panel order: hero, top-right 1, top-right 2, bottom 1-3.
+ *  boulevard and pier are the kit starter samples; the other four were made
+ *  for this entry with an image model and are free to use. */
+export const SAMPLES = [
+  { id: 'skyline', file: 'samples/skyline.jpg', label: 'Skyline dusk' },
+  { id: 'convertible', file: 'samples/convertible.jpg', label: 'Convertible' },
+  { id: 'lifeguard', file: 'samples/lifeguard.jpg', label: 'Lifeguard tower' },
+  { id: 'boulevard', file: 'samples/boulevard.jpg', label: 'Boulevard' },
+  { id: 'pier', file: 'samples/pier.jpg', label: 'Pier' },
+  { id: 'marina', file: 'samples/marina.jpg', label: 'Marina' },
+];
+
+/** Font family names, matching the @font-face rules in style.css. */
+export const FONTS = {
+  display: 'Anton',
+  body: '"Archivo Black"',
 };
 
-// A layout maps the cover box to named panel rects. Panel ids are stable:
-// the editor binds one photo slot per panel id, and the renderer draws them
-// in order, so adding a layout never renumbers the photo slots.
-export const LAYOUTS = {
-  trio: {
-    id: 'trio',
-    label: 'Vice Trio',
-    hint: '1 hero + 2 street panels',
-    panels: (W, H, g) => {
-      const heroH = Math.round(H * 0.58);
-      const half = (W - g) / 2;
-      return [
-        { id: 'hero', x: 0, y: 0, w: W, h: heroH },
-        { id: 'left', x: 0, y: heroH + g, w: half, h: H - heroH - g },
-        { id: 'right', x: half + g, y: heroH + g, w: half, h: H - heroH - g },
-      ];
-    },
-  },
-  duo: {
-    id: 'duo',
-    label: 'Split Duo',
-    hint: '2 tall panels, side by side',
-    panels: (W, H, g) => {
-      const half = (W - g) / 2;
-      return [
-        { id: 'hero', x: 0, y: 0, w: half, h: H },
-        { id: 'left', x: half + g, y: 0, w: half, h: H },
-      ];
-    },
-  },
-  quad: {
-    id: 'quad',
-    label: 'Neon Quad',
-    hint: '2 × 2 grid, four moments',
-    panels: (W, H, g) => {
-      const cw = (W - g) / 2;
-      const ch = (H - g) / 2;
-      return [
-        { id: 'hero', x: 0, y: 0, w: cw, h: ch },
-        { id: 'left', x: cw + g, y: 0, w: cw, h: ch },
-        { id: 'right', x: 0, y: ch + g, w: cw, h: ch },
-        { id: 'far', x: cw + g, y: ch + g, w: cw, h: ch },
-      ];
-    },
-  },
-  hero: {
-    id: 'hero',
-    label: 'Full Bleed',
-    hint: 'one photo, full cover',
-    panels: (W, H) => [{ id: 'hero', x: 0, y: 0, w: W, h: H }],
-  },
-};
-
-// Colour grades: a vertical wash laid over each panel with the blend mode
-// named here, plus a caption accent colour. Sunset is the default Vice City
-// look; neon is the night-strip look; noir is a hard high-contrast print.
+/** Colour grades. Each grade tints the photos, paints the caption band and
+ *  sets the halftone strength, so one tap re-grades the whole cover. */
 export const GRADES = {
   sunset: {
-    id: 'sunset',
-    label: 'Vice Sunset',
-    stops: ['#ff7a18', '#ff2e63', '#7b2fff'],
-    blend: 'soft-light',
-    strength: 0.85,
-    caption: '#ffb300',
-    captionStroke: '#12041f',
+    label: 'Sunset',
+    tintTop: 'rgba(255, 122, 61, 0)',
+    tintBottom: 'rgba(194, 39, 124, 0.55)',
+    band: ['#ff7a3d', '#c2277c', '#3b1d5e'],
+    halftone: 0.5,
+    accent: '#ffd166',
   },
   neon: {
-    id: 'neon',
-    label: 'Neon Night',
-    stops: ['#00e5ff', '#ff2e88', '#7b2fff'],
-    blend: 'overlay',
-    strength: 0.8,
-    caption: '#00e5ff',
-    captionStroke: '#12041f',
+    label: 'Neon',
+    tintTop: 'rgba(0, 229, 255, 0)',
+    tintBottom: 'rgba(255, 0, 128, 0.5)',
+    band: ['#00e5ff', '#7b2ff7', '#ff0080'],
+    halftone: 0.65,
+    accent: '#00e5ff',
   },
-  gold: {
-    id: 'gold',
-    label: 'Gold Hour',
-    stops: ['#ffd166', '#ff7a18', '#c1121f'],
-    blend: 'soft-light',
-    strength: 0.8,
-    caption: '#ffd166',
-    captionStroke: '#1a0b00',
-  },
-  noir: {
-    id: 'noir',
-    label: 'Noir Print',
-    stops: ['#e8e8e8', '#5a5a6a', '#0b0b12'],
-    blend: 'overlay',
-    strength: 0.55,
-    caption: '#f5efe4',
-    captionStroke: '#000000',
+  midnight: {
+    label: 'Midnight',
+    tintTop: 'rgba(20, 20, 80, 0)',
+    tintBottom: 'rgba(10, 10, 50, 0.6)',
+    band: ['#2b2d6e', '#14143a', '#050514'],
+    halftone: 0.35,
+    accent: '#b388ff',
   },
 };
 
-export const SAMPLES = {
-  boulevard: { label: 'Boulevard', src: 'samples/boulevard.jpg' },
-  pier: { label: 'Pier', src: 'samples/pier.jpg' },
-};
-
-// Deterministic grain: the same seed always draws the same speckles, so the
-// exported PNG is byte-stable for a given state.
-export function seededRandom(seed) {
-  let s = seed >>> 0;
-  return () => {
-    s = (s * 1664525 + 1013904223) >>> 0;
-    return s / 4294967296;
+/**
+ * Six-panel mosaic, as fractions of the cover. Returns the six photo rects
+ * plus the caption band rect, in panel order: hero, top-right 1, top-right 2,
+ * bottom 1, bottom 2, bottom 3. The mosaic changes shape with the size so
+ * the hero always dominates and no panel is ever a sliver.
+ */
+export function layoutFor(sizeKey) {
+  if (sizeKey === 'landscape') {
+    return {
+      panels: [
+        { x: 0, y: 0, w: 0.44, h: 0.78 },
+        { x: 0.44, y: 0, w: 0.1867, h: 0.39 },
+        { x: 0.6267, y: 0, w: 0.1867, h: 0.39 },
+        { x: 0.8133, y: 0, w: 0.1867, h: 0.39 },
+        { x: 0.44, y: 0.39, w: 0.28, h: 0.39 },
+        { x: 0.72, y: 0.39, w: 0.28, h: 0.39 },
+      ],
+      band: { x: 0, y: 0.78, w: 1, h: 0.22 },
+    };
+  }
+  if (sizeKey === 'portrait') {
+    return {
+      panels: [
+        { x: 0, y: 0, w: 0.66, h: 0.56 },
+        { x: 0.66, y: 0, w: 0.34, h: 0.28 },
+        { x: 0.66, y: 0.28, w: 0.34, h: 0.28 },
+        { x: 0, y: 0.56, w: 0.3333, h: 0.2 },
+        { x: 0.3333, y: 0.56, w: 0.3333, h: 0.2 },
+        { x: 0.6666, y: 0.56, w: 0.3334, h: 0.2 },
+      ],
+      band: { x: 0, y: 0.76, w: 1, h: 0.24 },
+    };
+  }
+  return {
+    panels: [
+      { x: 0, y: 0, w: 0.66, h: 0.6 },
+      { x: 0.66, y: 0, w: 0.34, h: 0.3 },
+      { x: 0.66, y: 0.3, w: 0.34, h: 0.3 },
+      { x: 0, y: 0.6, w: 0.3333, h: 0.2 },
+      { x: 0.3333, y: 0.6, w: 0.3333, h: 0.2 },
+      { x: 0.6666, y: 0.6, w: 0.3334, h: 0.2 },
+    ],
+    band: { x: 0, y: 0.8, w: 1, h: 0.2 },
   };
 }
-
-export const DEFAULT_STATE = {
-  layout: 'trio',
-  size: 'wide',
-  grade: 'sunset',
-  caption: 'SUNSET HEIST',
-  subcaption: 'VICE CITY · 2026',
-  captionPos: 'bottom',
-  gutter: 14,
-  grain: true,
-  halftone: false,
-  vignette: true,
-  // One photo slot per panel id; a slot holds { src, name, zoom, ox, oy, focus }.
-  // ox/oy are the pan offsets as fractions of the panel (0 = anchored).
-  // focus 'top' keeps faces in frame on the short wide panels.
-  photos: {
-    hero: { src: 'samples/pier.jpg', name: 'Pier', zoom: 1.15, ox: 0, oy: 0, focus: 'top' },
-    left: { src: 'samples/boulevard.jpg', name: 'Boulevard', zoom: 1.2, ox: 0.05, oy: 0, focus: 'top' },
-    right: { src: 'samples/pier.jpg', name: 'Pier', zoom: 1.35, ox: -0.06, oy: 0, focus: 'top' },
-    far: { src: 'samples/boulevard.jpg', name: 'Boulevard', zoom: 1.1, ox: 0, oy: 0, focus: 'top' },
-  },
-};
-
