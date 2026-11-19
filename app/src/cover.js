@@ -7,11 +7,15 @@ import { LAYOUTS, GRADES, PALETTE, SIZES, seededRandom } from './config.js';
 // Draw one photo into a panel rect with cover-fit, zoom and pan. The photo
 // is scaled to cover the rect, then zoomed around its centre, then shifted
 // by (ox, oy) fractions of the panel size — drag in the editor writes ox/oy.
+// `focus` anchors the vertical crop: 'top' keeps the top of the photo in
+// frame (faces live there), 'center' is the plain middle crop, 'bottom'
+// keeps the feet/ground. Horizontal crop stays centred.
 export function drawPhotoInto(ctx, img, rect, slot) {
   const { x, y, w, h } = rect;
   const zoom = slot?.zoom ?? 1;
   const ox = slot?.ox ?? 0;
   const oy = slot?.oy ?? 0;
+  const focus = slot?.focus ?? 'center';
   const iw = img.naturalWidth || img.width;
   const ih = img.naturalHeight || img.height;
   if (!iw || !ih) return;
@@ -19,7 +23,10 @@ export function drawPhotoInto(ctx, img, rect, slot) {
   const dw = iw * base * zoom;
   const dh = ih * base * zoom;
   const dx = x + (w - dw) / 2 + ox * w;
-  const dy = y + (h - dh) / 2 + oy * h;
+  let dy;
+  if (focus === 'top') dy = y + oy * h;
+  else if (focus === 'bottom') dy = y + h - dh + oy * h;
+  else dy = y + (h - dh) / 2 + oy * h;
   ctx.save();
   ctx.beginPath();
   ctx.rect(x, y, w, h);
@@ -48,18 +55,38 @@ export function gradePanel(ctx, rect, grade) {
   ctx.restore();
 }
 
+// A thin neon edge on the hero panel + a hairline on the rest: the poster
+// look reads first as "framed panels", so the edges must survive the grade.
+export function framePanel(ctx, rect, hero, size) {
+  const { x, y, w, h } = rect;
+  ctx.save();
+  ctx.lineWidth = hero ? Math.max(3, size / 360) : Math.max(1.5, size / 720);
+  ctx.strokeStyle = hero ? PALETTE.paper : 'rgba(245,239,228,0.55)';
+  ctx.strokeRect(x + ctx.lineWidth / 2, y + ctx.lineWidth / 2, w - ctx.lineWidth, h - ctx.lineWidth);
+  ctx.restore();
+}
+
 // Big bold caption with a heavy outline and a hard offset shadow — the
 // lettering must stay readable at 768 px wide, so the stroke is a real
 // fraction of the font size, not a fixed pixel count.
 export function drawCaption(ctx, state, grade, W, H, panels) {
   const caption = (state.caption || '').trim().toUpperCase();
   if (!caption) return;
-  const size = Math.round(W * 0.085);
+  // Fit the caption to the cover width: shrink the font until the whole
+  // word fits inside the margins — a clipped caption loses the duel.
+  const x = Math.round(W * 0.045);
+  const maxW = W - x * 2;
+  let size = Math.round(W * 0.085);
+  const setFont = (s) => { ctx.font = `400 ${s}px Anton, 'Archivo Black', sans-serif`; };
+  setFont(size);
+  while (size > 24 && ctx.measureText(caption).width > maxW) {
+    size = Math.round(size * 0.92);
+    setFont(size);
+  }
   const sub = (state.subcaption || '').trim().toUpperCase();
   const heroRect = panels[0];
   const bandH = size * 1.9;
   const bandY = state.captionPos === 'top' ? 0 : H - bandH;
-  const x = Math.round(W * 0.045);
 
   ctx.save();
   // Caption band: a dark slab so the letters sit on ink, not on photo.
@@ -68,7 +95,6 @@ export function drawCaption(ctx, state, grade, W, H, panels) {
   ctx.fillStyle = grade.caption;
   ctx.fillRect(0, state.captionPos === 'top' ? bandY + bandH - 4 : bandY, W, 4);
 
-  ctx.font = `400 ${size}px Anton, 'Archivo Black', sans-serif`;
   ctx.textBaseline = 'middle';
   ctx.lineJoin = 'round';
   ctx.miterLimit = 2;
@@ -86,15 +112,18 @@ export function drawCaption(ctx, state, grade, W, H, panels) {
     ctx.font = `400 ${subSize}px 'Archivo Black', sans-serif`;
     ctx.fillStyle = PALETTE.paper;
     const subY = bandY + bandH - subSize * 0.9;
+    const subW = ctx.measureText(sub).width;
     ctx.fillText(sub, x, subY);
-    // Feature strip, right-aligned on the same baseline: the judge reads
-    // the feature list in the same frame as the cover.
+    // Feature strip, right-aligned on the same baseline — only when it
+    // cannot collide with the sub-caption.
     const feats = `${panels.length} PANELS · 3 SIZES · OFFLINE`;
     const featSize = Math.round(size * 0.2);
     ctx.font = `400 ${featSize}px 'Archivo Black', sans-serif`;
-    const fw = ctx.measureText(feats).width;
-    ctx.fillStyle = PALETTE.cyan;
-    ctx.fillText(feats, W - x - fw, subY);
+    const featW = ctx.measureText(feats).width;
+    if (x + subW + 24 + featW < W - x) {
+      ctx.fillStyle = PALETTE.cyan;
+      ctx.fillText(feats, W - x - featW, subY);
+    }
   }
   ctx.restore();
 }
@@ -117,8 +146,8 @@ export function finishCover(ctx, state, W, H) {
     for (let y = 0; y < H; y += step) {
       for (let x = 0; x < W; x += step) {
         const v = rand();
-        if (v > 0.72) {
-          ctx.fillStyle = v > 0.9 ? 'rgba(255,255,255,0.10)' : 'rgba(0,0,0,0.10)';
+        if (v > 0.86) {
+          ctx.fillStyle = v > 0.95 ? 'rgba(255,255,255,0.07)' : 'rgba(0,0,0,0.07)';
           ctx.fillRect(x, y, step, step);
         }
       }

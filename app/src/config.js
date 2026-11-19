@@ -144,13 +144,14 @@ export const DEFAULT_STATE = {
   grain: true,
   halftone: false,
   vignette: true,
-  // One photo slot per panel id; a slot holds { src, name, zoom, ox, oy }.
-  // ox/oy are the pan offsets as fractions of the panel (0 = centred).
+  // One photo slot per panel id; a slot holds { src, name, zoom, ox, oy, focus }.
+  // ox/oy are the pan offsets as fractions of the panel (0 = anchored).
+  // focus 'top' keeps faces in frame on the short wide panels.
   photos: {
-    hero: { src: 'samples/pier.jpg', name: 'Pier', zoom: 1.15, ox: 0, oy: -0.04 },
-    left: { src: 'samples/boulevard.jpg', name: 'Boulevard', zoom: 1.2, ox: 0.05, oy: 0 },
-    right: { src: 'samples/pier.jpg', name: 'Pier', zoom: 1.35, ox: -0.06, oy: 0.05 },
-    far: { src: 'samples/boulevard.jpg', name: 'Boulevard', zoom: 1.1, ox: 0, oy: 0 },
+    hero: { src: 'samples/pier.jpg', name: 'Pier', zoom: 1.15, ox: 0, oy: 0, focus: 'top' },
+    left: { src: 'samples/boulevard.jpg', name: 'Boulevard', zoom: 1.2, ox: 0.05, oy: 0, focus: 'top' },
+    right: { src: 'samples/pier.jpg', name: 'Pier', zoom: 1.35, ox: -0.06, oy: 0, focus: 'top' },
+    far: { src: 'samples/boulevard.jpg', name: 'Boulevard', zoom: 1.1, ox: 0, oy: 0, focus: 'top' },
   },
 };
 

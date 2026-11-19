@@ -249,7 +249,9 @@ main {
 }
 .toast.show { opacity: 1; transform: translate(-50%, 0); }
 
-/* Sizes sheet (?shot=sizes): three rendered covers in a row, labelled. */
+/* Sizes sheet (?shot=sizes): three rendered covers in a row, labelled.
+   The sheet replaces <main>, so the editor's two-column grid must go. */
+body[data-shot="sizes"] main { display: block; }
 .size-sheet { padding: 18px 22px; }
 .size-sheet h2 {
   margin: 0 0 14px;
@@ -268,10 +270,11 @@ main {
 .size-row figure { margin: 0; }
 .size-row canvas {
   display: block;
-  max-width: 380px;
-  max-height: 380px;
+  /* One common height for all three sizes, so the sheet fits a 720 px
+     viewport: square 300×300, portrait 240×300, wide 533×300. */
+  height: 300px;
   width: auto;
-  height: auto;
+  max-width: none;
   border: 1px solid var(--line);
   border-radius: 6px;
 }

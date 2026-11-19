@@ -54,9 +54,9 @@ export async function applyShotMode(store, images) {
     const name = photo === 'pier' ? 'Pier' : 'Boulevard';
     store.update({
       photos: {
-        hero: { src, name, zoom: 1.15, ox: 0, oy: -0.04 },
-        left: { src: 'samples/boulevard.jpg', name: 'Boulevard', zoom: 1.2, ox: 0.05, oy: 0 },
-        right: { src, name, zoom: 1.35, ox: -0.06, oy: 0.05 },
+        hero: { src, name, zoom: 1.15, ox: 0, oy: 0, focus: 'top' },
+        left: { src: 'samples/boulevard.jpg', name: 'Boulevard', zoom: 1.2, ox: 0.05, oy: 0, focus: 'top' },
+        right: { src, name, zoom: 1.35, ox: -0.06, oy: 0, focus: 'top' },
       },
     });
     // The preset swapped photos after boot loaded the defaults: reload so
