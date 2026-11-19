@@ -1,57 +1,91 @@
-// Vice Cover Maker — state: photos, panels, caption, size, layout, grade.
-// A panel points at a photo by index and carries its own crop (zoom + offset).
-function viceDefaultPanels() {
-  return [
-    { photo: 0, zoom: 1.15, dx: 0, dy: 0 },
-    { photo: 1, zoom: 1.15, dx: 0, dy: 0.1 },
-    { photo: 0, zoom: 1.3, dx: 0.08, dy: -0.05 },
-  ];
+// Vice Cover Maker — state: one plain object, one pub/sub channel, optional
+// localStorage persistence. The renderer and the editor never talk to each
+// other directly; they both read and write through this module, so the live
+// preview and the exported PNG can never disagree about the state.
+import { DEFAULT_STATE } from './config.js';
+
+const STORE_KEY = 'vice-cover-maker-v1';
+
+function clone(value) {
+  return JSON.parse(JSON.stringify(value));
 }
 
-function viceCreateState() {
-  return {
-    photos: [
-      { id: "pier", label: "Pier sunset", src: "samples/pier.jpg", img: null, loaded: false },
-      { id: "boulevard", label: "Boulevard", src: "samples/boulevard.jpg", img: null, loaded: false },
-      { id: "pier2", label: "Pier sunset", src: "samples/pier.jpg", img: null, loaded: false },
-    ],
-    panels: viceDefaultPanels(),
-    layout: "trio",
-    grade: "sunset",
-    size: "wide",
-    caption: VICE_DEFAULT_CAPTION,
-    subcaption: VICE_DEFAULT_SUB,
-    place: VICE_DEFAULT_PLACE,
-    activePanel: 0,
-  };
+export function freshState() {
+  return clone(DEFAULT_STATE);
 }
 
-// Load every sample photo once; resolves when all have settled (load or error).
-function viceLoadPhotos(state) {
-  const jobs = state.photos.map((photo) => new Promise((resolve) => {
-    if (photo.img && photo.loaded) { resolve(photo); return; }
-    const img = new Image();
-    img.onload = () => { photo.img = img; photo.loaded = true; resolve(photo); };
-    img.onerror = () => { photo.img = null; photo.loaded = false; resolve(photo); };
-    img.src = photo.src;
-  }));
-  return Promise.all(jobs);
-}
+export function createStore(initial) {
+  let state = initial ? clone(initial) : freshState();
+  const listeners = new Set();
 
-// Point a panel at an uploaded photo (data URL) or a sample by id.
-function viceSetPanelPhoto(state, panelIndex, photoIndex) {
-  if (panelIndex < 0 || panelIndex >= state.panels.length) return;
-  if (photoIndex < 0 || photoIndex >= state.photos.length) return;
-  state.panels[panelIndex].photo = photoIndex;
-}
+  function get() {
+    return state;
+  }
 
-function viceAddUpload(state, dataUrl, name) {
-  const slot = state.photos.findIndex((p) => p.id.startsWith("upload"));
-  const img = new Image();
-  const photo = { id: "upload-" + Date.now(), label: name || "Your photo", src: dataUrl, img: null, loaded: false };
-  img.onload = () => { photo.img = img; photo.loaded = true; };
-  img.src = dataUrl;
-  if (slot >= 0) state.photos[slot] = photo;
-  else state.photos.push(photo);
-  return state.photos.indexOf(photo);
+  function emit() {
+    for (const fn of listeners) fn(state);
+  }
+
+  // Merge a patch, then notify. Nested photo-slot patches merge per slot so
+  // a zoom slider never wipes the pan offsets of the same panel.
+  function update(patch) {
+    const next = { ...state, ...patch };
+    if (patch.photos) {
+      next.photos = { ...state.photos };
+      for (const [slot, slotPatch] of Object.entries(patch.photos)) {
+        next.photos[slot] = { ...(state.photos[slot] || {}), ...slotPatch };
+      }
+    }
+    state = next;
+    persist();
+    emit();
+    return state;
+  }
+
+  function setPhoto(slot, photo) {
+    return update({ photos: { [slot]: photo } });
+  }
+
+  function reset() {
+    state = freshState();
+    persist();
+    emit();
+    return state;
+  }
+
+  function subscribe(fn) {
+    listeners.add(fn);
+    return () => listeners.delete(fn);
+  }
+
+  function persist() {
+    try {
+      localStorage.setItem(STORE_KEY, JSON.stringify(state));
+    } catch {
+      // Private mode / no storage: the app still works, it just forgets.
+    }
+  }
+
+  function restore() {
+    try {
+      const raw = localStorage.getItem(STORE_KEY);
+      if (!raw) return false;
+      const saved = JSON.parse(raw);
+      if (!saved || typeof saved !== 'object' || !saved.photos) return false;
+      state = { ...freshState(), ...saved, photos: { ...freshState().photos, ...saved.photos } };
+      emit();
+      return true;
+    } catch {
+      return false;
+    }
+  }
+
+  // The slots a layout actually shows, in draw order. Slots the layout does
+  // not use keep their photos (switching back restores them) but the editor
+  // only offers controls for the visible ones.
+  function visibleSlots(layoutPanels) {
+    return layoutPanels.map((p) => p.id);
+  }
+
+  return { get, update, setPhoto, reset, subscribe, restore, visibleSlots };
 }

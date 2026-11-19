@@ -1,5 +1,5 @@
+# Build output (main.ts writes here) and local tooling — never committed.
 out/
 node_modules/
-# local screenshot scratch
-shot-*.png
-test-*.png
+.DS_Store
+*.log

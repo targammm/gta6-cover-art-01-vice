@@ -1,49 +1,115 @@
-// Vice Cover Maker — shot mode for screenshots: ?shot=cover|editor|portrait.
-// No clicks needed: the page loads the named sample, applies the caption and
-// size from the URL, and either shows the exported cover full-bleed or the
-// editor with the photo already loaded.
-function viceParseShot() {
-  const q = new URLSearchParams(window.location.search);
-  const shot = q.get("shot") || "";
+// Vice Cover Maker — screenshot presets: ?shot=cover|editor|portrait|sizes
+// drives the app into a fixed, photo-loaded state so the screenshots are
+// deterministic and show the app exactly as a user would see it. The cover
+// presets export through the same exportCoverPNG the Export button uses and
+// display the PNG the app wrote — never a mock-up.
+import { SIZES } from './config.js';
+import { exportCoverPNG, renderCover } from './cover.js';
+import { loadSlotImages } from './editor.js';
+
+function setBodyMode(mode) {
+  document.body.dataset.shot = mode;
+  document.title = 'Vice Cover Maker — ' + mode;
+}
+
+function showExportedPNG(blob, size, label) {
+  const url = URL.createObjectURL(blob);
+  document.body.innerHTML = '';
+  const wrap = document.createElement('div');
+  wrap.style.cssText = 'margin:0;height:100vh;display:flex;align-items:center;justify-content:center;background:#0b0b12;';
+  const img = document.createElement('img');
+  img.src = url;
+  img.alt = label;
+  img.style.cssText = 'max-width:100vw;max-height:100vh;object-fit:contain;display:block;';
+  img.dataset.exported = 'true';
+  img.dataset.size = `${size.w}x${size.h}`;
+  wrap.appendChild(img);
+  document.body.appendChild(wrap);
+  return img;
+}
+
+// Wait until the named webfonts are actually loaded: a screenshot taken
+// before Anton arrives would show fallback lettering.
+export async function waitForFonts() {
+  try {
+    await Promise.all([
+      document.fonts.load('400 80px Anton'),
+      document.fonts.load("400 40px 'Archivo Black'"),
+    ]);
+    await document.fonts.ready;
+  } catch {
+    // Fallback lettering is still legible; never block on fonts.
+  }
+}
+
+export async function applyShotMode(store, images) {
+  const params = new URLSearchParams(location.search);
+  const shot = params.get('shot');
   if (!shot) return null;
-  return {
-    mode: shot,
-    photo: q.get("photo") || "pier",
-    size: q.get("size") || (shot === "portrait" ? "1080x1350" : "1920x1080"),
-    caption: q.get("caption") || VICE_DEFAULT_CAPTION,
-    sub: q.get("sub") || VICE_DEFAULT_SUB,
-    grade: q.get("grade") || "sunset",
-    layout: q.get("layout") || "trio",
-  };
+  const caption = params.get('caption');
+  const photo = params.get('photo');
+  if (caption) store.update({ caption: decodeURIComponent(caption) });
+  if (photo) {
+    const src = photo === 'pier' ? 'samples/pier.jpg' : 'samples/boulevard.jpg';
+    const name = photo === 'pier' ? 'Pier' : 'Boulevard';
+    store.update({
+      photos: {
+        hero: { src, name, zoom: 1.15, ox: 0, oy: -0.04 },
+        left: { src: 'samples/boulevard.jpg', name: 'Boulevard', zoom: 1.2, ox: 0.05, oy: 0 },
+        right: { src, name, zoom: 1.35, ox: -0.06, oy: 0.05 },
+      },
+    });
+    // The preset swapped photos after boot loaded the defaults: reload so
+    // the export uses the preset's images, not the stale ones.
+    images = await loadSlotImages(store.get(), images);
+  }
+  if (shot === 'cover' || shot === 'portrait') {
+    const sizeId = shot === 'portrait' ? 'portrait' : (params.get('size') || store.get().size);
+    store.update({ size: sizeId });
+    setBodyMode(shot);
+    await waitForFonts();
+    const { blob, size } = await exportCoverPNG(store.get(), images, sizeId);
+    const img = showExportedPNG(blob, size, `Exported ${size.w}x${size.h} cover`);
+    await new Promise((res) => { img.onload = res; img.onerror = res; });
+    return shot;
+  }
+  if (shot === 'sizes') {
+    setBodyMode('sizes');
+    await waitForFonts();
+    await renderSizeSheet(store, images);
+    return shot;
+  }
+  if (shot === 'editor') {
+    setBodyMode('editor');
+    await waitForFonts();
+    return shot;
+  }
+  return null;
 }
 
-function viceApplyShot(state, shot) {
-  if (shot.caption) state.caption = shot.caption;
-  if (shot.sub) state.subcaption = shot.sub;
-  if (shot.grade && VICE_GRADES[shot.grade]) state.grade = shot.grade;
-  if (shot.layout && VICE_LAYOUTS[shot.layout]) state.layout = shot.layout;
-  const sizeKey = Object.keys(VICE_SIZES).find((k) => {
-    const s = VICE_SIZES[k];
-    return s.w + "x" + s.h === shot.size;
-  });
-  if (sizeKey) state.size = sizeKey;
-  const sample = VICE_SAMPLES.find((s) => s.id === shot.photo) || VICE_SAMPLES[0];
-  const other = VICE_SAMPLES.find((s) => s.id !== sample.id) || VICE_SAMPLES[0];
-  state.photos[0].id = sample.id; state.photos[0].src = sample.src; state.photos[0].label = sample.label;
-  state.photos[1].id = other.id; state.photos[1].src = other.src; state.photos[1].label = other.label;
-  state.photos[2].id = sample.id; state.photos[2].src = sample.src; state.photos[2].label = sample.label;
-  state.panels[0].photo = 0;
-  state.panels[1].photo = 1;
-  state.panels[2].photo = 0;
-}
-
-function viceShowExportedCover(state) {
-  const size = VICE_SIZES[state.size];
-  const off = document.createElement("canvas");
-  viceDrawCover(off, state, size.w, size.h);
-  const img = document.getElementById("shotImg");
-  img.src = off.toDataURL("image/png");
-  img.alt = "Exported cover: " + state.caption;
-  img.draggable = false;
-  document.body.classList.add("shot-mode");
+// The sizes sheet: the same cover rendered at all three export sizes, side
+// by side, with their dimensions labelled — the "fast and easy" criterion in
+// one frame.
+async function renderSizeSheet(store, images) {
+  const state = store.get();
+  const sheet = document.createElement('div');
+  sheet.className = 'size-sheet';
+  sheet.appendChild(Object.assign(document.createElement('h2'), { textContent: 'One cover · three post sizes · one click' }));
+  const row = document.createElement('div');
+  row.className = 'size-row';
+  for (const size of Object.values(SIZES)) {
+    const cell = document.createElement('figure');
+    const canvas = document.createElement('canvas');
+    canvas.width = size.w;
+    canvas.height = size.h;
+    renderCover(canvas.getContext('2d'), state, images, size.w, size.h);
+    const cap = document.createElement('figcaption');
+    cap.textContent = `${size.label}`;
+    cell.append(canvas, cap);
+    row.appendChild(cell);
+  }
+  sheet.appendChild(row);
+  const main = document.querySelector('main');
+  main.innerHTML = '';
+  main.appendChild(sheet);
 }

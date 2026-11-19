@@ -1,109 +1,77 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Vice Cover Maker — GTA-style cover art from your photos</title>
+<title>Vice Cover Maker — GTA-style cover art studio</title>
+<meta name="description" content="Turn your photos into multi-panel GTA-style cover art. Offline, three post sizes, one click to PNG.">
 <link rel="stylesheet" href="style.css">
 </head>
 <body>
-<div id="app">
-  <header class="topbar">
-    <div class="brand">
-      <span class="brand-mark">VC</span>
-      <div>
-        <h1>VICE COVER MAKER</h1>
-        <p>Turn your photos into sunset Vice City cover art — offline, export PNG</p>
-      </div>
+<header class="top">
+  <div class="brand">
+    <h1>VICE COVER MAKER</h1>
+    <p>GTA-style cover art studio &middot; multi-panel &middot; sunset / neon grade &middot; offline</p>
+  </div>
+  <div class="top-actions">
+    <button id="resetBtn" type="button" class="ghost">Reset preset</button>
+    <button id="exportBtn" type="button" class="primary">Export PNG</button>
+  </div>
+</header>
+
+<main>
+  <section class="stage-col">
+    <div id="stageWrap" class="stage-wrap">
+      <canvas id="stage" width="1920" height="1080" aria-label="Live cover preview"></canvas>
+      <p id="sizeNote" class="size-note">Preview loading&hellip;</p>
     </div>
-    <div class="badges">
-      <span class="badge">3 PANELS</span>
-      <span class="badge">3 SIZES</span>
-      <span class="badge">OFFLINE</span>
-      <span class="badge hot">EXPORT PNG</span>
-    </div>
-  </header>
+    <p class="hint">Drag a panel to pan its photo &middot; scroll over it to zoom &middot; click a panel card to select it. Photos never leave your machine.</p>
+  </section>
 
-  <main class="editor">
-    <section class="controls" aria-label="Cover controls">
-      <div class="group">
-        <h2>1 · Photos</h2>
-        <p class="hint">Tap a photo to put it in the active panel. Uploads stay on your machine.</p>
-        <div id="photoSlots" class="slots"></div>
-        <div class="row">
-          <label class="upload-btn">+ Add your photos
-            <input id="uploadInput" type="file" accept="image/*" multiple hidden>
-          </label>
-          <button id="sampleBtn" type="button" class="ghost-btn">Load samples</button>
-        </div>
-      </div>
-
-      <div class="group">
-        <h2>2 · Layout</h2>
-        <div id="layoutRow" class="chips"></div>
-        <h2>3 · Colour grade</h2>
-        <div id="gradeRow" class="chips"></div>
-        <h2>4 · Post size</h2>
-        <div id="sizeRow" class="chips"></div>
-      </div>
-
-      <div class="group">
-        <h2>5 · Caption</h2>
-        <label class="field">Big caption
-          <input id="captionInput" type="text" maxlength="28" value="SUNSET HEIST">
-        </label>
-        <label class="field">Sub-caption
-          <input id="subInput" type="text" maxlength="40" value="ONE LAST SCORE">
-        </label>
-        <label class="field">Place tag
-          <input id="placeInput" type="text" maxlength="20" value="VICE CITY">
-        </label>
-      </div>
-
-      <div class="group">
-        <h2>6 · Crop the active panel</h2>
-        <div id="panelRow" class="chips"></div>
-        <label class="slider">Zoom <span id="zoomVal">1.15x</span>
-          <input id="zoomRange" type="range" min="1" max="2.5" step="0.05" value="1.15">
-        </label>
-        <label class="slider">Move left / right <span id="dxVal">0%</span>
-          <input id="dxRange" type="range" min="-0.4" max="0.4" step="0.02" value="0">
-        </label>
-        <label class="slider">Move up / down <span id="dyVal">0%</span>
-          <input id="dyRange" type="range" min="-0.4" max="0.4" step="0.02" value="0">
-        </label>
-      </div>
-
-      <button id="exportBtn" type="button" class="export-btn">EXPORT PNG COVER</button>
-      <p id="exportStatus" class="status">Pick a size, then export. The PNG is the full post size.</p>
+  <aside class="controls">
+    <section class="group">
+      <h2>1 &middot; Layout</h2>
+      <div id="layoutBox" class="seg-row" role="group" aria-label="Layout"></div>
     </section>
 
-    <section class="preview-pane" aria-label="Live preview">
-      <div class="preview-head">
-        <span>LIVE PREVIEW</span>
-        <span id="sizeLabel">Wide 1920 x 1080</span>
-      </div>
-      <canvas id="preview" width="1920" height="1080"></canvas>
-      <p class="preview-note">What you see is what the PNG looks like — same renderer, same pixels. Click the preview to export it.</p>
+    <section class="group">
+      <h2>2 &middot; Photos — one per panel</h2>
+      <div id="photoBox" class="slots"></div>
     </section>
-  </main>
 
-  <footer class="foot">
-    <span>Your photos never leave this browser.</span>
-    <span>Fonts: Anton + Archivo Black (SIL Open Font License).</span>
-    <span>Original art — no game logos, artwork or fonts.</span>
-  </footer>
-</div>
+    <section class="group">
+      <h2>3 &middot; Caption</h2>
+      <label class="field">Cover caption
+        <input id="captionInput" type="text" value="SUNSET HEIST" maxlength="24" autocomplete="off">
+      </label>
+      <label class="field">Sub-caption
+        <input id="subInput" type="text" value="VICE CITY · 2026" maxlength="40" autocomplete="off">
+      </label>
+      <div id="posBox" class="seg-row" role="group" aria-label="Caption position"></div>
+    </section>
 
-<div id="shotView" hidden>
-  <img id="shotImg" alt="Exported cover">
-</div>
+    <section class="group">
+      <h2>4 &middot; Grade &amp; finish</h2>
+      <div id="gradeBox" class="seg-row" role="group" aria-label="Colour grade"></div>
+      <label class="field">Panel gutter
+        <input id="gutterRange" type="range" min="0" max="28" step="1" value="14">
+      </label>
+      <label class="check"><input id="grainToggle" type="checkbox" checked> Film grain</label>
+      <label class="check"><input id="halftoneToggle" type="checkbox"> Halftone dots</label>
+      <label class="check"><input id="vignetteToggle" type="checkbox" checked> Vignette</label>
+    </section>
 
-<script src="src/config.js"></script>
-<script src="src/state.js"></script>
-<script src="src/cover.js"></script>
-<script src="src/editor.js"></script>
-<script src="src/shots.js"></script>
-<script src="src/main.js"></script>
+    <section class="group">
+      <h2>5 &middot; Export size</h2>
+      <div id="sizeBox" class="seg-row" role="group" aria-label="Export size"></div>
+      <p class="fine">PNG, exact post size. Square 1080&times;1080 &middot; Portrait 1080&times;1350 &middot; Wide 1920&times;1080.</p>
+    </section>
+
+    <p class="fine">Fonts: Anton &amp; Archivo Black (SIL Open Font License, files in app/fonts). Sample photos were made with an image model and are free to use.</p>
+  </aside>
+</main>
+
+<div id="toast" class="toast" role="status" aria-live="polite"></div>
+<script type="module" src="src/main.js"></script>
 </body>
 </html>

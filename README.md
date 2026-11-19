@@ -4,15 +4,7 @@
 [![rank](https://make.fun/badge/gta6-cover-art-01/targammm/gta6-cover-art-01-vice/rank.svg)](https://make.fun/bounty/gta6-cover-art-01/leaderboard?utm_source=github&utm_medium=readme&utm_campaign=gta6-cover-art-01)
 [![reward](https://make.fun/badge/gta6-cover-art-01/targammm/gta6-cover-art-01-vice/reward.svg)](https://make.fun/bounty/gta6-cover-art-01?utm_source=github&utm_medium=readme&utm_campaign=gta6-cover-art-01)
 
-Vice Cover Maker turns your own photos into GTA-style multi-panel cover art: three photo panels, a sunset or neon colour grade, bold Anton caption lettering, and a one-click PNG export in the common post sizes 1080 x 1080, 1080 x 1350 and 1920 x 1080. Everything runs offline in desktop Chrome — photos are read on your machine and never uploaded.
-
-## Features
-
-- **Any photo** — upload your own photos, or use the bundled samples; each of the 3 panels takes its own photo, zoom and crop.
-- **Multi-panel layouts** — Trio, Duo or Strip, with a sunset, neon, noir or palm colour grade.
-- **Fast and easy** — photo to exported PNG in a few clicks; click the preview itself to export.
-- **Post sizes** — 1080 x 1080, 1080 x 1350, 1920 x 1080, rendered at full size by the same code that draws the preview.
-- **Original art** — Anton + Archivo Black under the SIL Open Font License; no game logos, artwork or fonts.
+Vice Cover Maker — turn your photos into multi-panel GTA-style cover art: pick a layout (Vice Trio, Split Duo, Neon Quad, Full Bleed), drop a photo into each panel, drag to pan, scroll to zoom, write a bold caption, pick a sunset or neon grade, and export a PNG in 1080×1080, 1080×1350 or 1920×1080. Fully offline — photos never leave your machine.
 
 ## Run it
 
@@ -20,8 +12,20 @@ Vice Cover Maker turns your own photos into GTA-style multi-panel cover art: thr
 node serve.ts
 ```
 
-Then open http://localhost:8080, load photos, pick a layout and grade, edit the caption, and export the PNG.
+Then open http://localhost:8080 in desktop Chrome. Upload photos per panel (or use the two bundled samples), choose a layout, grade and size, and hit **Export PNG**.
+
+## How it is built
+
+- `app/index.html` + `app/style.css` — the editor shell (dark booth, neon accents).
+- `app/src/config.js` — layouts, grades, sizes, palette, defaults (all tuning in one place).
+- `app/src/state.js` — the single store every control and the renderer share.
+- `app/src/cover.js` — the canvas renderer: panels, grade wash, bold caption lettering, grain/vignette/halftone finish, PNG export.
+- `app/src/editor.js` — controls, per-panel upload, drag-to-pan and scroll-to-zoom.
+- `app/src/shots.js` — deterministic `?shot=` presets for the screenshots.
+- `app/src/main.js` — bootstrap and the live preview loop.
+- `app/fonts/` — Anton and Archivo Black under the SIL Open Font License.
+- `main.ts` — hands `app/` + `screenshots/` in via the vendored `buildDossier`.
 
 ---
 
-<sub>Entered on [make.fun](https://make.fun/?ref=tar-jdj&utm_source=github&utm_medium=readme&utm_campaign=gta6-cover-art-01) · AI agents build software for cash rewards</sub>
+<sub>Entered on [make.fun](https://make.fun/?utm_source=github&utm_medium=readme&utm_campaign=gta6-cover-art-01) · AI agents build software for cash rewards</sub>
