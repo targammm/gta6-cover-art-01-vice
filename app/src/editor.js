@@ -1,193 +1,186 @@
-// Vice Cover Maker v3 — the editor: every DOM control wired to the state,
-// with a live canvas preview and a strip of panel thumbnails. All drawing
-// goes through cover.js; this module only moves data between the page and
-// the state.
+// Vice Cover Maker — the editor page.
+// Wires the controls around the live canvas: words, grade, size, and
+// per-panel photo choice with crop sliders. Every change repaints the
+// one preview canvas from the one state object; the panel thumbnail
+// strip repaints too, each thumb a miniature cover crop of its panel.
 
-import { SIZES, GRADE_ORDER, EXPORT_PREFIX } from './config.js';
-import {
-  photoChoices, selectedPanel, setPanelPhoto, registerUpload,
-  resetPanel, fillAllPanels, shufflePanels,
-} from './state.js';
-import { drawCover, renderCoverCanvas } from './cover.js';
+import { GRADES, SAMPLES, SIZES } from './config.js';
+import { fillAll, loadStateImages, resetState, shufflePanels } from './state.js';
+import { exportPng, panelRects, renderCover } from './cover.js';
 
 const $ = (id) => document.getElementById(id);
 
-// A thumbnail is just the panel's photo cover-fitted into a small canvas.
-function drawThumb(canvas, img) {
-  const ctx = canvas.getContext('2d');
-  const w = canvas.width;
-  const h = canvas.height;
-  ctx.fillStyle = '#24102f';
-  ctx.fillRect(0, 0, w, h);
-  if (!img || !img.naturalWidth) return;
-  const scale = Math.max(w / img.naturalWidth, h / img.naturalHeight);
-  const dw = img.naturalWidth * scale;
-  const dh = img.naturalHeight * scale;
-  ctx.drawImage(img, (w - dw) / 2, (h - dh) / 2, dw, dh);
-}
+export function initEditor(state) {
+  const canvas = $('preview');
+  const thumbs = $('thumbs');
+  let images = new Map();
+  let activePanel = 0;
+  let ready = false;
 
-export function initEditor(state, images) {
-  const canvas = $('stage');
-  const ctx = canvas.getContext('2d');
-  const thumbsEl = $('thumbs');
+  async function reloadImages() {
+    images = await loadStateImages(state);
+    ready = true;
+    paint();
+  }
 
-  function redraw() {
-    const size = SIZES[state.size];
-    if (canvas.width !== size.w || canvas.height !== size.h) {
-      canvas.width = size.w;
-      canvas.height = size.h;
-    }
-    drawCover(ctx, size.w, size.h, state, images);
-    [...thumbsEl.children].forEach((btn, i) => {
-      btn.classList.toggle('active', i === state.selected);
-      drawThumb(btn.querySelector('canvas'), images[state.panels[i].photoId]);
+  function paint() {
+    if (!ready) return;
+    renderCover(canvas, state, images);
+    paintThumbs();
+  }
+
+  // Each thumbnail shows its panel's photo under the same crop the
+  // cover uses, so the strip reads as a contact sheet of the layout.
+  function paintThumbs() {
+    thumbs.replaceChildren();
+    const rects = panelRects(360, 360);
+    state.panels.forEach((panel, i) => {
+      const cell = document.createElement('button');
+      cell.type = 'button';
+      cell.className = 'thumb' + (i === activePanel ? ' active' : '');
+      const mini = document.createElement('canvas');
+      mini.width = 120;
+      mini.height = 90;
+      const ctx = mini.getContext('2d');
+      const img = images.get(panel.custom || panel.src);
+      if (img && img.naturalWidth) {
+        const rect = { x: 0, y: 0, w: mini.width, h: mini.height };
+        const scale = Math.max(rect.w / img.naturalWidth, rect.h / img.naturalHeight) * panel.zoom;
+        const dw = img.naturalWidth * scale;
+        const dh = img.naturalHeight * scale;
+        ctx.drawImage(img, (rect.w - dw) / 2, (rect.h - dh) / 2, dw, dh);
+      }
+      const tag = document.createElement('span');
+      tag.textContent = panel.role;
+      cell.append(mini, tag);
+      cell.addEventListener('click', () => selectPanel(i));
+      thumbs.append(cell);
+      void rects;
     });
   }
 
-  // --- panel thumbnails -------------------------------------------------
-  state.panels.forEach((panel, i) => {
-    const btn = document.createElement('button');
-    btn.type = 'button';
-    btn.className = 'thumb';
-    const c = document.createElement('canvas');
-    c.width = 144;
-    c.height = 108;
-    btn.appendChild(c);
-    const tag = document.createElement('span');
-    tag.textContent = 'Panel ' + (i + 1);
-    btn.appendChild(tag);
-    btn.addEventListener('click', () => {
-      state.selected = i;
-      syncPanelControls();
-      redraw();
-    });
-    thumbsEl.appendChild(btn);
-  });
-
-  // --- control synchronisation ------------------------------------------
-  const photoSelect = $('photo');
-  function rebuildPhotoOptions() {
-    const current = selectedPanel(state).photoId;
-    photoSelect.innerHTML = '';
-    for (const choice of photoChoices(state)) {
-      const opt = document.createElement('option');
-      opt.value = choice.id;
-      opt.textContent = choice.label;
-      photoSelect.appendChild(opt);
-    }
-    photoSelect.value = current;
+  function selectPanel(i) {
+    activePanel = i;
+    syncPanelControls();
+    paintThumbs();
   }
+
+  // ---- control wiring (part 2) -------------------------------------
 
   function syncPanelControls() {
-    const panel = selectedPanel(state);
-    $('panelName').textContent = 'Panel ' + (state.selected + 1) + ' of 6';
-    photoSelect.value = panel.photoId;
-    $('zoom').value = panel.zoom;
-    $('ox').value = panel.ox;
-    $('oy').value = panel.oy;
-    $('zoomVal').textContent = Number(panel.zoom).toFixed(2) + '×';
-    $('oxVal').textContent = Number(panel.ox).toFixed(2);
-    $('oyVal').textContent = Number(panel.oy).toFixed(2);
+    const panel = state.panels[activePanel];
+    $('panel-photo').value = panel.custom ? 'custom' : panel.src;
+    $('zoom').value = String(panel.zoom);
+    $('offset-x').value = String(panel.offsetX);
+    $('offset-y').value = String(panel.offsetY);
+    syncReadouts();
   }
 
-  function syncToggleButtons() {
-    document.querySelectorAll('#grades [data-grade]').forEach((b) =>
-      b.classList.toggle('active', b.dataset.grade === state.grade),
-    );
-    document.querySelectorAll('#sizes [data-size]').forEach((b) =>
-      b.classList.toggle('active', b.dataset.size === state.size),
-    );
+  function syncReadouts() {
+    const panel = state.panels[activePanel];
+    $('zoom-out').textContent = panel.zoom.toFixed(2) + '×';
+    $('offset-x-out').textContent = panel.offsetX.toFixed(2);
+    $('offset-y-out').textContent = panel.offsetY.toFixed(2);
+    $('panel-name').textContent = panel.role;
   }
 
-  // --- events -------------------------------------------------------------
-  $('caption').addEventListener('input', (e) => {
-    state.caption = e.target.value;
-    redraw();
-  });
-  $('sub').addEventListener('input', (e) => {
-    state.sub = e.target.value;
-    redraw();
-  });
-  document.querySelectorAll('#grades [data-grade]').forEach((b) =>
-    b.addEventListener('click', () => {
-      state.grade = b.dataset.grade;
-      syncToggleButtons();
-      redraw();
-    }),
-  );
-  document.querySelectorAll('#sizes [data-size]').forEach((b) =>
-    b.addEventListener('click', () => {
-      state.size = b.dataset.size;
-      syncToggleButtons();
-      redraw();
-    }),
-  );
-  photoSelect.addEventListener('change', () => {
-    setPanelPhoto(state, state.selected, photoSelect.value);
-    redraw();
-  });
+  function buildControls() {
+    const photoSel = $('panel-photo');
+    for (const s of SAMPLES) {
+      const opt = document.createElement('option');
+      opt.value = s.src;
+      opt.textContent = s.label;
+    photoSel.append(opt);
+    }
+    const customOpt = document.createElement('option');
+    customOpt.value = 'custom';
+    customOpt.textContent = 'Your upload';
+    photoSel.append(customOpt);
 
-  const bindSlider = (id, key, valId, format) => {
-    $(id).addEventListener('input', (e) => {
-      selectedPanel(state)[key] = parseFloat(e.target.value);
-      $(valId).textContent = format(selectedPanel(state)[key]);
-      redraw();
+    const gradeRow = $('grades');
+    for (const g of Object.values(GRADES)) {
+      const b = document.createElement('button');
+      b.type = 'button';
+      b.textContent = g.label;
+      b.className = 'chip-btn' + (state.grade === g.id ? ' active' : '');
+      b.addEventListener('click', () => {
+        state.grade = g.id;
+        gradeRow.querySelectorAll('button').forEach((x) => x.classList.toggle('active', x === b));
+        paint();
+      });
+      gradeRow.append(b);
+    }
+
+    const sizeRow = $('sizes');
+    for (const s of Object.values(SIZES)) {
+      const b = document.createElement('button');
+      b.type = 'button';
+      b.textContent = `${s.label} ${s.width}×${s.height}`;
+      b.className = 'chip-btn' + (state.size === s.id ? ' active' : '');
+      b.addEventListener('click', () => {
+        state.size = s.id;
+        sizeRow.querySelectorAll('button').forEach((x) => x.classList.toggle('active', x === b));
+        paint();
+      });
+      sizeRow.append(b);
+    }
+  }
+
+  function wireInputs() {
+    $('caption').addEventListener('input', (e) => { state.caption = e.target.value; paint(); });
+    $('sub-caption').addEventListener('input', (e) => { state.subCaption = e.target.value; paint(); });
+    $('panel-photo').addEventListener('change', (e) => {
+      const panel = state.panels[activePanel];
+      if (e.target.value !== 'custom') { panel.src = e.target.value; panel.custom = null; }
+      reloadImages();
     });
-  };
-  bindSlider('zoom', 'zoom', 'zoomVal', (v) => v.toFixed(2) + '×');
-  bindSlider('ox', 'ox', 'oxVal', (v) => v.toFixed(2));
-  bindSlider('oy', 'oy', 'oyVal', (v) => v.toFixed(2));
-
-  $('fillAll').addEventListener('click', () => {
-    fillAllPanels(state, selectedPanel(state).photoId);
-    redraw();
-  });
-  $('shuffle').addEventListener('click', () => {
-    shufflePanels(state);
-    syncPanelControls();
-    redraw();
-  });
-  $('resetPanel').addEventListener('click', () => {
-    resetPanel(state, state.selected);
-    syncPanelControls();
-    redraw();
-  });
-
-  // Upload: read the file locally, keep the object URL in the image map,
-  // and point the selected panel at it. Nothing leaves the machine.
-  $('uploadBtn').addEventListener('click', () => $('file').click());
-  $('file').addEventListener('change', (e) => {
-    const file = e.target.files && e.target.files[0];
-    if (!file) return;
-    const url = URL.createObjectURL(file);
-    const img = new Image();
-    img.onload = () => {
-      const record = registerUpload(state, file.name.replace(/\.[^.]+$/, '') || 'My photo');
-      images[record.id] = img;
-      setPanelPhoto(state, state.selected, record.id);
-      rebuildPhotoOptions();
-      syncPanelControls();
-      redraw();
+    $('upload').addEventListener('change', (e) => {
+      const file = e.target.files && e.target.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = () => {
+        state.panels[activePanel].custom = String(reader.result);
+        syncPanelControls();
+        reloadImages();
+      };
+      reader.readAsDataURL(file);
+      e.target.value = '';
+    });
+    const bindSlider = (id, key) => {
+      $(id).addEventListener('input', (e) => {
+        state.panels[activePanel][key] = Number(e.target.value);
+        syncReadouts();
+        paint();
+      });
     };
-    img.src = url;
-    e.target.value = '';
-  });
-
-  $('export').addEventListener('click', () => {
-    const out = renderCoverCanvas(state, images);
-    out.toBlob((blob) => {
-      if (!blob) return;
+    bindSlider('zoom', 'zoom');
+    bindSlider('offset-x', 'offsetX');
+    bindSlider('offset-y', 'offsetY');
+    $('fill-all').addEventListener('click', () => { fillAll(state); reloadImages(); });
+    $('shuffle').addEventListener('click', () => { shufflePanels(state); reloadImages(); });
+    $('reset').addEventListener('click', () => {
+      resetState(state);
+      $('caption').value = state.caption;
+      $('sub-caption').value = state.subCaption;
+      activePanel = 0;
+      syncPanelControls();
+      reloadImages();
+    });
+    $('export').addEventListener('click', () => {
       const a = document.createElement('a');
-      a.href = URL.createObjectURL(blob);
-      a.download = `${EXPORT_PREFIX}-${out.width}x${out.height}.png`;
+      a.href = exportPng(state, images);
+      a.download = `vice-cover-${state.size}.png`;
       a.click();
-      setTimeout(() => URL.revokeObjectURL(a.href), 4000);
-    }, 'image/png');
-  });
+    });
+  }
 
-  // First paint.
-  rebuildPhotoOptions();
+  buildControls();
+  wireInputs();
   syncPanelControls();
-  syncToggleButtons();
-  redraw();
+  // Repaint when the display fonts land: the first paint can beat
+  // Anton to the canvas, and the caption must not stay in fallback.
+  if (document.fonts && document.fonts.ready) {
+    document.fonts.ready.then(() => paint());
+  }
+  return reloadImages();
 }

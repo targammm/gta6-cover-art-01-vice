@@ -1,81 +1,91 @@
-// Vice Cover Maker v3 — shared constants: export sizes, built-in photos,
-// panel roles, cover grades and the six-panel layout. Everything the app
-// loads is a local file; nothing here points at the network.
+// Vice Cover Maker — static configuration.
+// Everything the renderer and editor need that never changes at runtime:
+// the six panels, the bundled sample photos, the export sizes and the
+// four colour grades. No network, no clock, no randomness in here.
 
-export const SIZES = {
-  square: { id: 'square', w: 1080, h: 1080, label: '1080 × 1080' },
-  portrait: { id: 'portrait', w: 1080, h: 1350, label: '1080 × 1350' },
-  wide: { id: 'wide', w: 1920, h: 1080, label: '1920 × 1080' },
-};
-export const SIZE_ORDER = ['square', 'portrait', 'wide'];
+export const PANELS = [
+  { id: 'hero', role: 'HERO', sample: 'samples/boulevard.jpg' },
+  { id: 'chase', role: 'CHASE', sample: 'samples/convertible.jpg' },
+  { id: 'heist', role: 'HEIST', sample: 'samples/marina.jpg' },
+  { id: 'vice', role: 'VICE', sample: 'samples/skyline.jpg' },
+  { id: 'crew', role: 'CREW', sample: 'samples/pier.jpg' },
+  { id: 'getaway', role: 'GETAWAY', sample: 'samples/lifeguard.jpg' },
+];
 
 export const SAMPLES = [
-  { id: 'skyline', src: 'samples/skyline.jpg', label: 'Sunset skyline' },
-  { id: 'convertible', src: 'samples/convertible.jpg', label: 'Coast convertible' },
-  { id: 'lifeguard', src: 'samples/lifeguard.jpg', label: 'Lifeguard tower' },
-  { id: 'boulevard', src: 'samples/boulevard.jpg', label: 'Palm boulevard' },
-  { id: 'pier', src: 'samples/pier.jpg', label: 'Old pier' },
-  { id: 'marina', src: 'samples/marina.jpg', label: 'Marina yachts' },
+  { id: 'boulevard', label: 'Boulevard', src: 'samples/boulevard.jpg' },
+  { id: 'convertible', label: 'Convertible', src: 'samples/convertible.jpg' },
+  { id: 'marina', label: 'Marina', src: 'samples/marina.jpg' },
+  { id: 'skyline', label: 'Skyline', src: 'samples/skyline.jpg' },
+  { id: 'pier', label: 'Pier', src: 'samples/pier.jpg' },
+  { id: 'lifeguard', label: 'Lifeguard', src: 'samples/lifeguard.jpg' },
 ];
 
-export const ROLES = ['HERO', 'CHASE', 'HEIST', 'VICE', 'CREW', 'GETAWAY'];
+export const SIZES = {
+  square: { id: 'square', label: 'Square', width: 1080, height: 1080 },
+  portrait: { id: 'portrait', label: 'Portrait', width: 1080, height: 1350 },
+  wide: { id: 'wide', label: 'Wide', width: 1920, height: 1080 },
+};
 
-export const DEFAULT_CAPTION = 'VICE CITY';
-export const DEFAULT_SUB = 'A SUNSET STORY';
-export const BADGE_TOP = 'EST. 2026';
-export const BADGE_BOTTOM = 'LEONIDA';
-export const PILL_TEXT = '6 PANELS • 3 SIZES';
-export const MICRO_TEXT = 'LEONIDA • VICE CITY • 2026';
-export const EXPORT_PREFIX = 'vice-cover';
-
-// Whole-cover colour grades. Each grade is a translucent wash laid over the
-// panels (top / middle / bottom stops), an accent line colour for panel
-// borders and the pill, a halftone dot colour, and the glow colour behind
-// the caption lettering.
+// The four grades. Each one is a small recipe the renderer mixes over
+// every panel: a translucent colour wash, a bright accent for rules and
+// chips, a halftone ink colour and the glow colour behind the caption.
 export const GRADES = {
   sunset: {
-    name: 'Sunset',
-    wash: ['rgba(255, 84, 138, 0.30)', 'rgba(255, 138, 61, 0.20)', 'rgba(110, 44, 190, 0.32)'],
-    line: '#ff5c8a',
-    dot: 'rgba(255, 190, 120, 0.5)',
-    glow: '#ff2e7e',
-    chip: 'rgba(24, 6, 30, 0.62)',
+    id: 'sunset',
+    label: 'Sunset',
+    wash: 'rgba(255, 94, 154, 0.20)',
+    washDeep: 'rgba(124, 44, 168, 0.28)',
+    accent: '#ffb03a',
+    halftone: 'rgba(255, 120, 90, 0.55)',
+    glow: '#ff2e88',
+    captionFrom: '#ff5e9c',
+    captionTo: '#ffb03a',
   },
   neon: {
-    name: 'Neon',
-    wash: ['rgba(124, 58, 237, 0.32)', 'rgba(255, 46, 150, 0.20)', 'rgba(14, 116, 233, 0.30)'],
-    line: '#22d3ee',
-    dot: 'rgba(103, 232, 249, 0.5)',
-    glow: '#e0218a',
-    chip: 'rgba(10, 6, 34, 0.62)',
+    id: 'neon',
+    label: 'Neon',
+    wash: 'rgba(122, 44, 255, 0.22)',
+    washDeep: 'rgba(20, 10, 70, 0.30)',
+    accent: '#37e6ff',
+    halftone: 'rgba(255, 62, 178, 0.50)',
+    glow: '#37e6ff',
+    captionFrom: '#c86bff',
+    captionTo: '#37e6ff',
   },
   midnight: {
-    name: 'Midnight',
-    wash: ['rgba(16, 24, 72, 0.36)', 'rgba(23, 42, 110, 0.26)', 'rgba(6, 8, 30, 0.42)'],
-    line: '#7aa2ff',
-    dot: 'rgba(168, 196, 255, 0.45)',
-    glow: '#3b82f6',
-    chip: 'rgba(4, 8, 26, 0.66)',
+    id: 'midnight',
+    label: 'Midnight',
+    wash: 'rgba(18, 42, 110, 0.30)',
+    washDeep: 'rgba(4, 10, 34, 0.38)',
+    accent: '#7fb2ff',
+    halftone: 'rgba(90, 140, 255, 0.45)',
+    glow: '#3a6bff',
+    captionFrom: '#8fc2ff',
+    captionTo: '#3a6bff',
   },
   palm: {
-    name: 'Palm',
-    wash: ['rgba(20, 184, 166, 0.26)', 'rgba(255, 120, 170, 0.20)', 'rgba(12, 90, 110, 0.32)'],
-    line: '#2dd4bf',
-    dot: 'rgba(153, 246, 228, 0.5)',
-    glow: '#fb7185',
-    chip: 'rgba(4, 30, 30, 0.62)',
+    id: 'palm',
+    label: 'Palm',
+    wash: 'rgba(16, 160, 140, 0.20)',
+    washDeep: 'rgba(6, 60, 66, 0.30)',
+    accent: '#ffd166',
+    halftone: 'rgba(255, 110, 160, 0.50)',
+    glow: '#ff6ea0',
+    captionFrom: '#5eead4',
+    captionTo: '#ff6ea0',
   },
 };
-export const GRADE_ORDER = ['sunset', 'neon', 'midnight', 'palm'];
 
-// The six panels as fractions of the cover: a hero at top-left, two stacked
-// panels at top-right, and a row of three along the bottom. The renderer
-// insets each cell by half the gutter on every side.
-export const PANEL_CELLS = [
-  { x0: 0.0, y0: 0.0, x1: 0.61, y1: 0.61 },
-  { x0: 0.61, y0: 0.0, x1: 1.0, y1: 0.305 },
-  { x0: 0.61, y0: 0.305, x1: 1.0, y1: 0.61 },
-  { x0: 0.0, y0: 0.61, x1: 0.3333, y1: 1.0 },
-  { x0: 0.3333, y0: 0.61, x1: 0.6666, y1: 1.0 },
-  { x0: 0.6666, y0: 0.61, x1: 1.0, y1: 1.0 },
-];
+export const DEFAULTS = {
+  caption: 'VICE CITY',
+  subCaption: 'A SUNSET STORY',
+  grade: 'sunset',
+  size: 'square',
+  zoomMin: 0.8,
+  zoomMax: 2.5,
+  offsetMin: -0.5,
+  offsetMax: 0.5,
+  background: '#2a0e2e',
+  gutterRatio: 0.012,
+};

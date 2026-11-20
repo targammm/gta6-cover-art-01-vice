@@ -1,70 +1,92 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Vice Cover Maker — six-panel GTA-style cover art</title>
+<title>Vice Cover Maker — six-panel GTA-style cover studio</title>
+<meta name="description" content="Build a six-panel, sunset-drenched game cover from your own photos. Offline, instant, exports at 1080×1080, 1080×1350 and 1920×1080.">
 <link rel="stylesheet" href="style.css">
 </head>
 <body>
-<header class="top">
-  <h1>VICE COVER MAKER</h1>
-  <p>Turn your photos into a six-panel Vice City poster — pick a photo per panel, set the caption, export a PNG.</p>
+<header class="site-header">
+  <div class="brand">
+    <span class="brand-mark">VC</span>
+    <div>
+      <h1>Vice Cover Maker</h1>
+      <p class="tagline">Six panels. One sunset. Your photos, Leonida style.</p>
+    </div>
+  </div>
+  <p class="offline-hint">Works fully offline — photos never leave this page.</p>
 </header>
-<main class="layout">
-  <section class="stage-wrap">
-    <canvas id="stage" width="1080" height="1080"></canvas>
-    <div class="strip" id="thumbs" role="group" aria-label="Choose a panel"></div>
+
+<main id="editor" class="editor">
+  <section class="stage" aria-label="Cover preview">
+    <canvas id="preview" width="1080" height="1080"></canvas>
+    <div id="thumbs" class="thumbs" aria-label="Panels"></div>
+    <p id="error-note" class="error-note" hidden></p>
   </section>
-  <aside class="controls">
-    <label class="field">Caption
-      <input id="caption" type="text" maxlength="26" value="VICE CITY" autocomplete="off">
+
+  <aside class="controls" aria-label="Cover controls">
+    <label class="field">
+      <span>Caption</span>
+      <input id="caption" type="text" value="VICE CITY" maxlength="24" autocomplete="off">
     </label>
-    <label class="field">Sub-caption
-      <input id="sub" type="text" maxlength="34" value="A SUNSET STORY" autocomplete="off">
+    <label class="field">
+      <span>Sub-caption</span>
+      <input id="sub-caption" type="text" value="A SUNSET STORY" maxlength="32" autocomplete="off">
     </label>
-    <div class="field"><span class="field-label">Grade</span>
-      <div class="row" id="grades">
-        <button type="button" data-grade="sunset">Sunset</button>
-        <button type="button" data-grade="neon">Neon</button>
-        <button type="button" data-grade="midnight">Midnight</button>
-        <button type="button" data-grade="palm">Palm</button>
-      </div>
+
+    <div class="field">
+      <span>Grade</span>
+      <div id="grades" class="chip-row" role="group" aria-label="Colour grade"></div>
     </div>
-    <div class="field"><span class="field-label">Export size</span>
-      <div class="row" id="sizes">
-        <button type="button" data-size="square">1080 × 1080</button>
-        <button type="button" data-size="portrait">1080 × 1350</button>
-        <button type="button" data-size="wide">1920 × 1080</button>
-      </div>
+
+    <div class="field">
+      <span>Export size</span>
+      <div id="sizes" class="chip-row" role="group" aria-label="Export size"></div>
     </div>
-    <h2 id="panelName">Panel 1 of 6</h2>
-    <label class="field">Photo for this panel
-      <select id="photo"></select>
-    </label>
-    <button type="button" id="uploadBtn" class="wide-btn">Upload your own photo</button>
-    <input type="file" id="file" accept="image/*" hidden>
-    <label class="field slider">Zoom
-      <input id="zoom" type="range" min="0.8" max="2.5" step="0.01" value="1">
-      <span class="val" id="zoomVal">1.00×</span>
-    </label>
-    <label class="field slider">Offset X
-      <input id="ox" type="range" min="-0.5" max="0.5" step="0.01" value="0">
-      <span class="val" id="oxVal">0.00</span>
-    </label>
-    <label class="field slider">Offset Y
-      <input id="oy" type="range" min="-0.5" max="0.5" step="0.01" value="0">
-      <span class="val" id="oyVal">0.00</span>
-    </label>
-    <div class="row">
-      <button type="button" id="fillAll">Fill all panels</button>
-      <button type="button" id="shuffle">Shuffle</button>
-      <button type="button" id="resetPanel">Reset panel</button>
+
+    <fieldset class="field panel-box">
+      <legend>Panel — <span id="panel-name">HERO</span></legend>
+      <label class="field">
+        <span>Photo</span>
+        <select id="panel-photo"></select>
+      </label>
+      <label class="upload-btn">
+        Upload your photo
+        <input id="upload" type="file" accept="image/*" hidden>
+      </label>
+      <label class="slider">
+        <span>Zoom <output id="zoom-out">1.00×</output></span>
+        <input id="zoom" type="range" min="0.8" max="2.5" step="0.01" value="1">
+      </label>
+      <label class="slider">
+        <span>Shift X <output id="offset-x-out">0.00</output></span>
+        <input id="offset-x" type="range" min="-0.5" max="0.5" step="0.01" value="0">
+      </label>
+      <label class="slider">
+        <span>Shift Y <output id="offset-y-out">0.00</output></span>
+        <input id="offset-y" type="range" min="-0.5" max="0.5" step="0.01" value="0">
+      </label>
+    </fieldset>
+
+    <div class="button-row">
+      <button id="fill-all" type="button">Fill all panels</button>
+      <button id="shuffle" type="button">Shuffle</button>
+      <button id="reset" type="button">Reset</button>
     </div>
-    <button type="button" id="export" class="primary">Export PNG</button>
-    <p class="hint">Everything runs offline in your browser — your photos never leave this machine.</p>
+
+    <button id="export" type="button" class="primary">Export PNG</button>
+    <p class="hint">Tip: click a thumbnail under the preview to pick which panel you are editing. Exports render at full resolution, exactly as previewed.</p>
   </aside>
 </main>
+
+<section id="shot-stage" class="shot-stage" hidden></section>
+
+<footer class="site-footer">
+  <p>Vice Cover Maker — a fan-made cover studio. Fonts: Anton and Archivo Black, SIL Open Font License 1.1.</p>
+</footer>
+
 <script type="module" src="src/main.js"></script>
 </body>
 </html>

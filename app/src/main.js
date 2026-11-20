@@ -1,52 +1,47 @@
-// Vice Cover Maker v3 — boot. Loads the built-in photos and the two display
-// fonts first (the renderer draws text with them), then routes: a ?shot=
-// query goes to the screenshot scenes, anything else opens the editor.
+// Vice Cover Maker — page boot.
+// Decides what this visit is: a screenshot composition when the URL
+// carries ?shot=, otherwise the editor. The editor is also what the
+// ?shot=editor capture frames, so editor mode always boots fully and
+// only then reports itself ready.
 
-import { SAMPLES } from './config.js';
 import { createState } from './state.js';
 import { initEditor } from './editor.js';
-import { runShotMode, markShotReady } from './shots.js';
+import { runShotMode, waitShotReady } from './shots.js';
 
-const images = {};
-
-function loadImage(src) {
-  return new Promise((resolve, reject) => {
-    const img = new Image();
-    img.onload = () => resolve(img);
-    img.onerror = () => reject(new Error('could not load ' + src));
-    img.src = src;
-  });
-}
+export { waitShotReady };
 
 async function boot() {
-  await Promise.all(
-    SAMPLES.map(async (sample) => {
-      images[sample.id] = await loadImage(sample.src);
-    }),
-  );
-  try {
-    await document.fonts.load('120px Anton');
-    await document.fonts.load('48px "Archivo Black"');
-    await document.fonts.ready;
-  } catch {
-    /* the canvas falls back to sans-serif if a font face fails */
+  const params = new URLSearchParams(window.location.search);
+  const shot = params.get('shot');
+  if (shot && shot !== 'editor') {
+    const handled = await runShotMode(params);
+    if (handled) return;
   }
-
   const state = createState();
-  const params = new URLSearchParams(location.search);
-  const canvas = document.getElementById('stage');
-
-  if (params.get('shot') === 'editor') {
-    document.body.classList.add('shot-editor');
-    initEditor(state, images);
-    await markShotReady();
-    return;
+  await initEditor(state);
+  if (shot === 'editor') {
+    document.body.classList.add('editor-shot');
+    try {
+      await Promise.all([
+        document.fonts.load('100px Anton'),
+        document.fonts.load('40px "Archivo Black"'),
+      ]);
+      await document.fonts.ready;
+    } catch { /* paint stands as it is */ }
+    await new Promise((resolve) =>
+      requestAnimationFrame(() => requestAnimationFrame(resolve)),
+    );
+    window.__shotReady = true;
   }
-  if (params.has('shot')) {
-    await runShotMode(params, state, images, canvas);
-    return;
-  }
-  initEditor(state, images);
 }
 
-boot();
+boot().catch((err) => {
+  const note = document.getElementById('error-note');
+  if (note) {
+    note.hidden = false;
+    note.textContent = 'Something failed to load: ' + (err && err.message ? err.message : String(err));
+  }
+  // Still raise the flag so a capture never hangs on a broken page;
+  // the broken frame is itself the evidence.
+  window.__shotReady = true;
+});
