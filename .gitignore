@@ -1,5 +1,7 @@
+# Vice Cover Maker — local build output and scratch
 out/
 out2/
 node_modules/
 .DS_Store
 *.log
+tmp/

@@ -3,50 +3,68 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Vice Cover Maker v2.1 — six-panel sunset covers</title>
+<title>Vice Cover Maker — six-panel GTA-style cover art</title>
 <link rel="stylesheet" href="style.css">
 </head>
 <body>
 <header class="top">
-  <h1>VICE COVER MAKER <span>v2.1</span></h1>
-  <p>Six-panel sunset covers — pick a photo per panel, set the caption, export a PNG.</p>
+  <h1>VICE COVER MAKER</h1>
+  <p>Turn your photos into a six-panel Vice City poster — pick a photo per panel, set the caption, export a PNG.</p>
 </header>
 <main class="layout">
-  <section class="preview">
-    <canvas id="cover" width="1080" height="1080" aria-label="Cover preview"></canvas>
-    <canvas id="sizes" width="1280" height="720" hidden aria-label="Export sizes"></canvas>
-    <div class="strip" id="strip" role="group" aria-label="Panels"></div>
+  <section class="stage-wrap">
+    <canvas id="stage" width="1080" height="1080"></canvas>
+    <div class="strip" id="thumbs" role="group" aria-label="Choose a panel"></div>
   </section>
-  <aside class="controls" id="controls">
-    <h2>Make your cover</h2>
-    <label>Caption <input id="caption" type="text" value="VICE CITY" maxlength="24"></label>
-    <label>Sub-caption <input id="sub" type="text" value="A SUNSET STORY" maxlength="32"></label>
-    <div class="row"><span>Grade</span>
-      <button type="button" data-grade="sunset">Sunset</button>
-      <button type="button" data-grade="neon">Neon</button>
-      <button type="button" data-grade="midnight">Midnight</button>
+  <aside class="controls">
+    <label class="field">Caption
+      <input id="caption" type="text" maxlength="26" value="VICE CITY" autocomplete="off">
+    </label>
+    <label class="field">Sub-caption
+      <input id="sub" type="text" maxlength="34" value="A SUNSET STORY" autocomplete="off">
+    </label>
+    <div class="field"><span class="field-label">Grade</span>
+      <div class="row" id="grades">
+        <button type="button" data-grade="sunset">Sunset</button>
+        <button type="button" data-grade="neon">Neon</button>
+        <button type="button" data-grade="midnight">Midnight</button>
+        <button type="button" data-grade="palm">Palm</button>
+      </div>
     </div>
-    <div class="row"><span>Export size</span>
-      <button type="button" data-size="square">1080²</button>
-      <button type="button" data-size="portrait">1080×1350</button>
-      <button type="button" data-size="wide">1920×1080</button>
+    <div class="field"><span class="field-label">Export size</span>
+      <div class="row" id="sizes">
+        <button type="button" data-size="square">1080 × 1080</button>
+        <button type="button" data-size="portrait">1080 × 1350</button>
+        <button type="button" data-size="wide">1920 × 1080</button>
+      </div>
     </div>
-    <h3 id="panelLabel">Panel 1</h3>
-    <label>Photo <select id="photo"></select></label>
-    <button type="button" id="upload">Upload your own photo</button>
-    <label>Zoom <input id="zoom" type="range" min="0.8" max="2.5" step="0.05" value="1"><span id="zoomVal">1.00×</span></label>
-    <label>Offset X <input id="ox" type="range" min="-0.5" max="0.5" step="0.01" value="0"><span id="oxVal">0.00</span></label>
-    <label>Offset Y <input id="oy" type="range" min="-0.5" max="0.5" step="0.01" value="0"><span id="oyVal">0.00</span></label>
+    <h2 id="panelName">Panel 1 of 6</h2>
+    <label class="field">Photo for this panel
+      <select id="photo"></select>
+    </label>
+    <button type="button" id="uploadBtn" class="wide-btn">Upload your own photo</button>
+    <input type="file" id="file" accept="image/*" hidden>
+    <label class="field slider">Zoom
+      <input id="zoom" type="range" min="0.8" max="2.5" step="0.01" value="1">
+      <span class="val" id="zoomVal">1.00×</span>
+    </label>
+    <label class="field slider">Offset X
+      <input id="ox" type="range" min="-0.5" max="0.5" step="0.01" value="0">
+      <span class="val" id="oxVal">0.00</span>
+    </label>
+    <label class="field slider">Offset Y
+      <input id="oy" type="range" min="-0.5" max="0.5" step="0.01" value="0">
+      <span class="val" id="oyVal">0.00</span>
+    </label>
     <div class="row">
-      <button type="button" id="fillall">Fill all with this photo</button>
-      <button type="button" id="shuffle">Shuffle photos</button>
-      <button type="button" id="reset">Reset panel</button>
+      <button type="button" id="fillAll">Fill all panels</button>
+      <button type="button" id="shuffle">Shuffle</button>
+      <button type="button" id="resetPanel">Reset panel</button>
     </div>
     <button type="button" id="export" class="primary">Export PNG</button>
-    <p class="hint">Tip: click a panel thumbnail below the preview, then pick its photo and crop. Everything runs offline — photos never leave your browser.</p>
+    <p class="hint">Everything runs offline in your browser — your photos never leave this machine.</p>
   </aside>
 </main>
-<input type="file" id="uploadFile" accept="image/*" hidden>
 <script type="module" src="src/main.js"></script>
 </body>
 </html>

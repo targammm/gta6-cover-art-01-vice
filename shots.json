@@ -1,5 +1,5 @@
 [
-  { "name": "1-cover.jpg", "query": "?shot=cover&size=square&caption=VICE%20CITY", "w": 1080, "h": 1080 },
+  { "name": "1-cover.jpg", "query": "?shot=cover&size=wide&caption=VICE%20CITY", "w": 1280, "h": 720 },
   { "name": "2-editor.jpg", "query": "?shot=editor", "w": 1280, "h": 720 },
   { "name": "3-cover-portrait.jpg", "query": "?shot=cover&size=portrait&caption=VICE%20CITY", "w": 1024, "h": 1280 },
   { "name": "4-sizes.jpg", "query": "?shot=sizes", "w": 1280, "h": 720 }

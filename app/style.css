@@ -1,3 +1,6 @@
+/* Vice Cover Maker v3 — dark plum studio theme, neon accents.
+   The two display fonts are local files, like everything else. */
+
 @font-face {
   font-family: 'Anton';
   src: url('fonts/Anton-Regular.ttf') format('truetype');
@@ -9,149 +12,172 @@
   font-display: swap;
 }
 
-:root {
-  --bg: #12081f;
-  --panel: #1d0f2e;
-  --ink: #ffffff;
-  --muted: #c9a8d8;
-  --pink: #ff2e88;
-  --gold: #ffd166;
-  --line: #3a1c55;
-}
-
 * { box-sizing: border-box; }
 
 body {
   margin: 0;
-  background: var(--bg);
-  color: var(--ink);
-  font: 16px/1.5 system-ui, -apple-system, sans-serif;
+  background: #170722;
+  color: #f6eefc;
+  font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
 }
 
-.top { padding: 20px 24px 8px; }
-.top h1 {
+header.top {
+  padding: 18px 28px 10px;
+  background: linear-gradient(90deg, #2a0a3e, #4a1042 55%, #2a0a3e);
+  border-bottom: 2px solid #ff2e7e;
+}
+header.top h1 {
+  margin: 0;
   font-family: 'Anton', sans-serif;
   font-size: 34px;
-  letter-spacing: 2px;
-  margin: 0;
-  color: #fff;
-  text-shadow: 0 0 18px rgba(255, 46, 136, 0.6);
+  letter-spacing: 1.5px;
+  background: linear-gradient(180deg, #ff5c8a, #ff9a3d);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
 }
-.top h1 span { color: var(--gold); font-size: 20px; vertical-align: middle; }
-.top p { margin: 4px 0 0; color: var(--muted); }
+header.top p {
+  margin: 4px 0 6px;
+  color: #e9c8f5;
+  font-size: 14.5px;
+}
 
 .layout {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) 340px;
-  gap: 20px;
-  padding: 16px 24px 28px;
-  max-width: 1280px;
-  margin: 0 auto;
+  display: flex;
+  gap: 22px;
+  align-items: flex-start;
+  padding: 16px 22px 26px;
 }
-
-.preview canvas {
-  width: 100%;
+.stage-wrap {
+  flex: 1 1 auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+}
+canvas#stage {
+  max-width: 100%;
+  max-height: 62vh;
+  width: auto;
   height: auto;
-  display: block;
-  border-radius: 12px;
-  background: #14061f;
-  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.5);
+  border: 2px solid #ff5c8a;
+  border-radius: 6px;
+  background: #12041e;
+  box-shadow: 0 12px 44px rgba(0, 0, 0, 0.55);
 }
 
 .strip {
-  display: grid;
-  grid-template-columns: repeat(6, 1fr);
+  display: flex;
   gap: 8px;
-  margin-top: 12px;
+  flex-wrap: wrap;
+  justify-content: center;
 }
 .thumb {
-  padding: 0;
-  border: 2px solid transparent;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  padding: 5px 5px 3px;
+  background: #24102f;
+  border: 2px solid #59336b;
   border-radius: 8px;
-  overflow: hidden;
-  background: var(--panel);
   cursor: pointer;
-}
-.thumb img { width: 100%; aspect-ratio: 1; object-fit: cover; display: block; }
-.thumb span {
-  display: block;
+  color: #d9bfe8;
   font-size: 11px;
-  padding: 4px 2px;
-  color: var(--muted);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  font-family: 'Archivo Black', sans-serif;
 }
-.thumb.sel { border-color: var(--pink); box-shadow: 0 0 0 2px rgba(255, 46, 136, 0.35); }
+.thumb canvas { border-radius: 4px; display: block; }
+.thumb.active { border-color: #ff9a3d; color: #ffffff; }
 
 .controls {
-  background: var(--panel);
-  border: 1px solid var(--line);
+  flex: 0 0 322px;
+  display: flex;
+  flex-direction: column;
+  gap: 11px;
+  background: #1f0a2e;
+  border: 1px solid #59336b;
   border-radius: 12px;
   padding: 16px;
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-  align-self: start;
 }
-.controls h2,
-.controls h3 {
-  margin: 0;
+.controls h2 {
+  margin: 2px 0 0;
   font-family: 'Archivo Black', sans-serif;
   font-size: 15px;
-  letter-spacing: 1px;
+  color: #ffb3cd;
 }
-.controls label {
+.field {
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 5px;
   font-size: 13px;
-  color: var(--muted);
+  color: #e9c8f5;
 }
-.controls input[type="text"],
-.controls select {
-  background: #0f0618;
-  color: #fff;
-  border: 1px solid var(--line);
-  border-radius: 8px;
+.field-label { font-size: 13px; color: #e9c8f5; }
+.field input[type='text'],
+.field select {
   padding: 8px 10px;
-  font: inherit;
+  border-radius: 7px;
+  border: 1px solid #59336b;
+  background: #12041e;
+  color: #ffffff;
+  font-size: 14.5px;
 }
-.controls .row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
-.controls .row span { font-size: 13px; color: var(--muted); margin-right: 2px; }
-.controls button {
-  background: #2a1542;
-  color: #fff;
-  border: 1px solid var(--line);
+.field.slider { flex-direction: row; align-items: center; gap: 9px; }
+.field.slider input[type='range'] { flex: 1; accent-color: #ff2e7e; }
+.field .val {
+  min-width: 44px;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  color: #ffffff;
+}
+.row { display: flex; gap: 7px; flex-wrap: wrap; }
+button {
+  font-family: 'Archivo Black', sans-serif;
+  font-size: 12px;
+  padding: 8px 11px;
   border-radius: 8px;
-  padding: 8px 12px;
-  font: inherit;
+  border: 1px solid #59336b;
+  background: #2c1240;
+  color: #f6eefc;
   cursor: pointer;
 }
-.controls button:hover { border-color: var(--pink); }
-.controls button.on { background: var(--pink); border-color: var(--pink); }
-.controls button.primary { background: var(--pink); border-color: var(--pink); font-weight: 700; padding: 12px; }
-.controls input[type="range"] { width: 100%; accent-color: var(--pink); }
-.controls .hint { font-size: 12px; color: var(--muted); margin: 0; }
+button:hover { border-color: #ff5c8a; }
+button.active {
+  background: #ff2e7e;
+  border-color: #ff9a3d;
+  color: #ffffff;
+}
+button.primary {
+  background: linear-gradient(180deg, #ff5c8a, #ff2e7e);
+  border: none;
+  font-size: 15px;
+  padding: 12px;
+  color: #ffffff;
+}
+button.wide-btn { width: 100%; }
+.hint { margin: 0; font-size: 12.5px; color: #bda3cc; line-height: 1.45; }
 
-@media (max-width: 860px) {
-  .layout { grid-template-columns: 1fr; }
+/* Screenshot scenes: only the stage canvas, edge to edge. */
+body.shot { background: #000; }
+body.shot header.top,
+body.shot .controls,
+body.shot .strip { display: none; }
+body.shot .layout { display: block; padding: 0; }
+body.shot .stage-wrap { display: block; }
+body.shot canvas#stage {
+  width: 100vw;
+  height: 100vh;
+  max-width: none;
+  max-height: none;
+  border: none;
+  border-radius: 0;
+  box-shadow: none;
+  display: block;
 }
 
-/* Screenshot modes: cover alone, or the sizes sheet alone. */
-body.shot-cover .top,
-body.shot-cover .controls,
-body.shot-cover .strip,
-body.shot-sizes .top,
-body.shot-sizes .controls,
-body.shot-sizes .strip { display: none; }
-body.shot-cover,
-body.shot-sizes { background: #14061f; }
-body.shot-cover .layout,
-body.shot-sizes .layout { display: block; padding: 0; margin: 0; max-width: none; }
-body.shot-cover .preview canvas,
-body.shot-sizes .preview canvas { border-radius: 0; box-shadow: none; }
-/* The .preview canvas rule sets display:block, which would override the
-   hidden attribute — hide the unused canvas with CSS in shot modes. */
-body.shot-cover #sizes,
-body.shot-sizes #cover { display: none; }
+@media (max-width: 900px) {
+  .layout { flex-direction: column; }
+  .controls { flex: 1 1 auto; width: 100%; }
+  canvas#stage { max-height: 54vh; }
+}

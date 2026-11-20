@@ -1,74 +1,52 @@
-// Vice Cover Maker v2.1 — boot: load samples and fonts, build state,
-// wire the editor, and handle screenshot modes (?shot=cover|editor|sizes).
+// Vice Cover Maker v3 — boot. Loads the built-in photos and the two display
+// fonts first (the renderer draws text with them), then routes: a ?shot=
+// query goes to the screenshot scenes, anything else opens the editor.
 
-import { createState, sizeOf } from './state.js';
-import { SAMPLES, SIZES } from './config.js';
-import { drawCover } from './cover.js';
+import { SAMPLES } from './config.js';
+import { createState } from './state.js';
 import { initEditor } from './editor.js';
-import { runShot } from './shots.js';
+import { runShotMode, markShotReady } from './shots.js';
+
+const images = {};
 
 function loadImage(src) {
   return new Promise((resolve, reject) => {
     const img = new Image();
     img.onload = () => resolve(img);
-    img.onerror = () => reject(new Error(`cannot load ${src}`));
+    img.onerror = () => reject(new Error('could not load ' + src));
     img.src = src;
   });
 }
 
 async function boot() {
-  const state = createState();
-  const query = new URLSearchParams(location.search);
-  const shot = query.get('shot') || '';
-  if (query.get('caption')) state.caption = query.get('caption');
-  if (query.get('sub')) state.sub = query.get('sub');
-  if (query.get('grade') && ['sunset', 'neon', 'midnight'].includes(query.get('grade'))) {
-    state.grade = query.get('grade');
-  }
-  if (query.get('size') && SIZES.some((s) => s.id === query.get('size'))) {
-    state.size = query.get('size');
-  }
-  if (query.get('photo')) state.panels[0].photo = query.get('photo');
-
-  const images = {};
   await Promise.all(
-    SAMPLES.map(async (s) => {
-      images[s.file] = await loadImage(s.file);
+    SAMPLES.map(async (sample) => {
+      images[sample.id] = await loadImage(sample.src);
     }),
   );
   try {
-    await document.fonts.load('100px Anton');
-    await document.fonts.load('100px "Archivo Black"');
+    await document.fonts.load('120px Anton');
+    await document.fonts.load('48px "Archivo Black"');
     await document.fonts.ready;
   } catch {
-    // Fall back to system fonts if the local TTFs cannot load.
+    /* the canvas falls back to sans-serif if a font face fails */
   }
 
-  const canvas = document.getElementById('cover');
-  const sizesCanvas = document.getElementById('sizes');
-  const draw = () => {
-    const s = sizeOf(state);
-    if (canvas.width !== s.w || canvas.height !== s.h) {
-      canvas.width = s.w;
-      canvas.height = s.h;
-    }
-    drawCover(canvas, state, images);
-  };
+  const state = createState();
+  const params = new URLSearchParams(location.search);
+  const canvas = document.getElementById('stage');
 
-  if (shot) {
-    await runShot(shot, query, { state, images, canvas, sizesCanvas, draw });
-  } else {
-    initEditor(state, images, draw);
-    draw();
+  if (params.get('shot') === 'editor') {
+    document.body.classList.add('shot-editor');
+    initEditor(state, images);
+    await markShotReady();
+    return;
   }
+  if (params.has('shot')) {
+    await runShotMode(params, state, images, canvas);
+    return;
+  }
+  initEditor(state, images);
 }
 
-boot().catch((err) => {
-  console.error(err);
-  document.body.dataset.error = String(err?.message ?? err);
-});
-
-// Small version handle for the UI footer and for screenshot automation.
-export function viceVersion() {
-  return '2.1.0';
-}
+boot();

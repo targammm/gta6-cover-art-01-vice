@@ -1,71 +1,67 @@
-// Vice Cover Maker v2.1 — editor state. Plain data, no DOM here, so the
-// cover renderer can be driven from the editor, from a screenshot query,
-// or from an export without touching the page.
+// Vice Cover Maker v3 — editor state. Plain data only; the renderer in
+// cover.js turns a state into pixels, and the editor mutates the state and
+// asks for a redraw. Uploaded photos live here as lightweight records
+// ({ id, label }); their Image objects sit in the image map owned by main.js.
 
-import { SAMPLES, SIZES, GRADES, DEFAULT_CAPTION, DEFAULT_SUB } from './config.js';
+import { SAMPLES, DEFAULT_CAPTION, DEFAULT_SUB } from './config.js';
 
-// One panel: which photo it shows, and how the photo is cropped inside it.
-// zoom 1 fits the photo to the panel; ox/oy shift the crop in panel units.
-export function defaultPanels() {
-  const order = ['skyline', 'convertible', 'lifeguard', 'boulevard', 'pier', 'marina'];
-  return order.map((id) => ({ photo: id, zoom: 1, ox: 0, oy: 0 }));
+let uploadSeq = 0;
+
+export function defaultPanel(index) {
+  return { photoId: SAMPLES[index % SAMPLES.length].id, zoom: 1, ox: 0, oy: 0 };
 }
 
 export function createState() {
   return {
-    panels: defaultPanels(),
-    selected: 0,
-    grade: 'sunset',
-    size: 'square',
     caption: DEFAULT_CAPTION,
     sub: DEFAULT_SUB,
-    // Uploaded photos, keyed by a generated id, with their object URL image.
-    uploads: {},
-    uploadSeq: 0,
+    grade: 'sunset',
+    size: 'square',
+    selected: 0,
+    panels: SAMPLES.map((_, i) => defaultPanel(i)),
+    uploads: [],
   };
 }
 
-export function sizeOf(state) {
-  return SIZES.find((s) => s.id === state.size) ?? SIZES[0];
+export function registerUpload(state, label) {
+  uploadSeq += 1;
+  const record = { id: 'upload-' + uploadSeq, label: label || 'My photo ' + uploadSeq };
+  state.uploads.push(record);
+  return record;
 }
 
-export function gradeOf(state) {
-  return GRADES[state.grade] ?? GRADES.sunset;
-}
-
-export function photoFile(state, panel) {
-  const up = state.uploads[panel.photo];
-  if (up) return up.url;
-  const sample = SAMPLES.find((s) => s.id === panel.photo);
-  return sample ? sample.file : SAMPLES[0].file;
-}
-
-export function photoLabel(state, panel) {
-  const up = state.uploads[panel.photo];
-  if (up) return up.label;
-  const sample = SAMPLES.find((s) => s.id === panel.photo);
-  return sample ? sample.label : panel.photo;
-}
-
-// All photo choices the picker offers: the six samples plus uploads.
+// Every photo the picker can offer: the built-in samples first, then the
+// visitor's own uploads in the order they were added.
 export function photoChoices(state) {
-  const choices = SAMPLES.map((s) => ({ id: s.id, label: s.label }));
-  for (const [id, up] of Object.entries(state.uploads)) {
-    choices.push({ id, label: up.label });
-  }
-  return choices;
+  const builtin = SAMPLES.map((s) => ({ id: s.id, label: s.label }));
+  return builtin.concat(state.uploads.map((u) => ({ id: u.id, label: u.label })));
 }
 
-// Reset one panel to its default photo and crop.
-export function resetPanel(state, index) {
-  const order = ['skyline', 'convertible', 'lifeguard', 'boulevard', 'pier', 'marina'];
-  state.panels[index] = { photo: order[index % order.length], zoom: 1, ox: 0, oy: 0 };
+export function selectedPanel(state) {
+  return state.panels[state.selected];
 }
 
-// Point a panel at a photo and reset its crop.
 export function setPanelPhoto(state, index, photoId) {
-  state.panels[index].photo = photoId;
-  state.panels[index].zoom = 1;
-  state.panels[index].ox = 0;
-  state.panels[index].oy = 0;
+  state.panels[index].photoId = photoId;
+}
+
+export function resetPanel(state, index) {
+  state.panels[index] = defaultPanel(index);
+}
+
+// Point every panel at one photo, keeping each panel's crop as it is.
+export function fillAllPanels(state, photoId) {
+  for (const panel of state.panels) panel.photoId = photoId;
+}
+
+// Rotate the panel photos by one slot (deterministic, so a screenshot of
+// the result is reproducible) — the editor's "shuffle" is a rotation plus
+// a reversal, which reads as a remix without any randomness.
+export function shufflePanels(state) {
+  const ids = state.panels.map((p) => p.photoId);
+  ids.push(ids.shift());
+  ids.reverse();
+  state.panels.forEach((panel, i) => {
+    panel.photoId = ids[i];
+  });
 }
