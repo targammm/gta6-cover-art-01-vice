@@ -4,49 +4,70 @@
 
 # Vice Cover Maker
 
-A small, fully offline web app that turns your own photos and a caption into
-cover art in the style of a GTA 6 poster: a six-panel collage — one full-bleed
-background photo plus five framed windows — under a Vice City sunset or neon
-colour grade, with bold poster lettering across the top or bottom.
+Vice Cover Maker is a little cover-art studio that runs entirely in your
+browser. Drop in a handful of photos, type a headline, and it arranges
+everything into a poster modelled on GTA 6's key art: a grid of framed
+panels over one big backdrop shot, washed in a Vice City sunset or neon
+grade and finished with heavy display lettering. Nothing is installed,
+nothing is uploaded — the whole thing is plain static files and your
+pictures never leave the machine.
 
 Entered in the [Make GTA 6 Cover Art](https://make.fun/bounty/gta6-cover-art-01) bounty on make.fun.
 
+## Features
+
+- **Six-panel collage** — one full-bleed background image behind five
+  framed windows, with the grid reshaped to suit each export ratio.
+- **Frame every panel by hand** — each window has its own zoom control,
+  and you can drag a panel around on the canvas to pick the exact crop.
+- **Your photos or ours** — fill panels from the six bundled Vice City
+  sample pictures, or bring your own through the file picker or by
+  dropping files straight onto the cover. Mix and match freely: one
+  photo everywhere, or a different one in every frame.
+- **Anton poster lettering** — your caption is set in Anton with a chunky
+  outline, gradient fill and drop shadow, backed by a letterspaced
+  Archivo Black subtitle; move it between the top and bottom of the
+  cover and scale it to taste.
+- **Four colour grades** — Sunset, Neon Nights, Dusk and Clean, each
+  pairing a photo filter with a soft-light wash, a shade along the foot
+  of the cover and a gentle vignette.
+- **PNG export in three post sizes** — download the finished cover at
+  1080 × 1080, 1080 × 1350 or 1920 × 1080, rendered from the same canvas
+  you preview.
+- **Fully offline** — no build step, no server calls, no tracking; open
+  it once and it works with the network cable pulled.
+
 ## Run it
+
+Start the bundled local server from the repository root:
 
 ```
 node serve.ts
 ```
 
-then open http://localhost:8080. Or serve the `app/` folder with any static
-file server. There is no build step and no network use: photos are read
-locally in the browser and never uploaded anywhere.
+then open http://localhost:8080 in a browser. Any static file server
+pointed at the `app/` folder does the same job.
 
-For the make.fun hand-in, `node main.ts` copies `app/` and `screenshots/`
-into the output directory (`/output`, or `$MAKEFUN_OUTPUT_DIR`) and writes
-`dossier.json` there.
+The entry program is `main.ts`. Running
 
-## Features
+```
+MAKEFUN_OUTPUT_DIR=out node main.ts
+```
 
-- **Six-panel composition** — a full-bleed background plus five framed
-  collage windows, with layouts tuned per aspect ratio.
-- **Any photo in any panel** — pick from the six bundled Vice City samples or
-  upload your own photo per panel (file picker or drag-and-drop onto the
-  cover). One photo can fill several panels, or each panel gets its own.
-- **Reframe by hand** — per-panel zoom sliders, and drag a panel directly on
-  the cover to choose its crop.
-- **Poster lettering** — an editable caption in Anton with a thick outline,
-  warm gradient fill and soft shadow, plus a letterspaced Archivo Black
-  subtitle; caption position (top/bottom) and size are adjustable.
-- **Four colour grades** — Sunset, Neon Nights, Dusk and Clean, each a photo
-  filter plus a soft-light wash, foot shade and vignette.
-- **Full-size PNG export** — 1080 × 1080, 1080 × 1350 and 1920 × 1080,
-  rendered from the same canvas composition as the preview.
-
-The six sample photos are original drawings generated for this app, and the
-poster fonts are Anton and Archivo Black under the SIL Open Font License 1.1
-(see `app/fonts/OFL.txt`).
+copies `app/` and `screenshots/` into the output directory (`out` in
+this example, `/output` when the variable is not set) and writes a
+`dossier.json` there describing the entry — that folder is the package
+handed in for judging.
 
 ## License
 
-MIT — see `LICENSE`. A fan-made toy for your own photos; not affiliated with
-Rockstar Games or Take-Two Interactive.
+The code is released under the MIT License — see `LICENSE` in this
+repository.
+
+The bundled fonts, Anton and Archivo Black, are licensed separately
+under the SIL Open Font License 1.1; the full text ships with them in
+`app/fonts/OFL.txt`. The six sample pictures are original artwork drawn
+for this project.
+
+A fan-made toy for your own photos — not affiliated with Rockstar Games
+or Take-Two Interactive.
