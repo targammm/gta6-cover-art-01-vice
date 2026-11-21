@@ -1,28 +1,30 @@
-{
-  "shots": [
-    {
-      "file": "1-cover.jpg",
-      "url": "?shot=cover&size=wide&caption=VICE%20CITY",
-      "width": 1280,
-      "height": 720
-    },
-    {
-      "file": "2-editor.jpg",
-      "url": "?shot=editor",
-      "width": 1280,
-      "height": 720
-    },
-    {
-      "file": "3-cover-portrait.jpg",
-      "url": "?shot=cover&size=portrait&caption=VICE%20CITY",
-      "width": 1024,
-      "height": 1280
-    },
-    {
-      "file": "4-sizes.jpg",
-      "url": "?shot=sizes",
-      "width": 1280,
-      "height": 720
-    }
-  ]
-}
+[
+  {
+    "name": "1-cover.jpg",
+    "query": "?shot=cover",
+    "w": 1280,
+    "h": 720,
+    "shows": "The exported wide cover: six panels of Vice City samples under the Sunset grade, SUNSET HEIST lettering across the foot."
+  },
+  {
+    "name": "2-editor.jpg",
+    "query": "?shot=editor",
+    "w": 1280,
+    "h": 800,
+    "shows": "The studio itself: control column with lettering, grade, size, per-panel cards and export buttons beside the live square cover."
+  },
+  {
+    "name": "3-cover-portrait.jpg",
+    "query": "?shot=portrait",
+    "w": 1024,
+    "h": 1280,
+    "shows": "The exported portrait cover: the six-panel collage in 4:5 under the Neon Nights grade, NEON NIGHTS lettering across the top."
+  },
+  {
+    "name": "4-sizes.jpg",
+    "query": "?shot=square",
+    "w": 1080,
+    "h": 1080,
+    "shows": "The exported square cover: the same studio composition rendered at 1080 × 1080 under the Dusk grade, DUSK PATROL lettering."
+  }
+]

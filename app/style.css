@@ -1,203 +1,130 @@
-/* Vice Cover Maker — page styles.
-   Deep plum and neon pink, echoing the covers the app makes. The two
-   display faces are vendored under fonts/ (SIL OFL 1.1, see
-   fonts/OFL.txt) so the page works with no network at all. */
-
+/* Vice Cover Maker — poster-bright dark studio theme. */
 @font-face {
-  font-family: "Anton";
-  src: url("fonts/Anton-Regular.ttf") format("truetype");
-  font-weight: 400;
-  font-style: normal;
+  font-family: 'Anton';
+  src: url('fonts/Anton-Regular.ttf') format('truetype');
   font-display: swap;
 }
-
 @font-face {
-  font-family: "Archivo Black";
-  src: url("fonts/ArchivoBlack-Regular.ttf") format("truetype");
-  font-weight: 400;
-  font-style: normal;
+  font-family: 'Archivo Black';
+  src: url('fonts/ArchivoBlack-Regular.ttf') format('truetype');
   font-display: swap;
 }
 
 * { box-sizing: border-box; }
-
+html, body { margin: 0; padding: 0; }
 body {
-  margin: 0;
-  font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
-  background: #1c081f;
-  color: #ffe9f4;
-}
-
-.site-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 1rem;
-  padding: 1rem 1.5rem;
-  background: linear-gradient(90deg, #2a0e2e, #4a1140 55%, #7a1c50);
-  border-bottom: 3px solid #ff5e9c;
-}
-
-.brand { display: flex; align-items: center; gap: 0.9rem; }
-
-.brand-mark {
-  font-family: "Anton", sans-serif;
-  font-size: 1.6rem;
-  color: #16040f;
-  background: linear-gradient(135deg, #ff5e9c, #ffb03a);
-  border-radius: 0.6rem;
-  padding: 0.35rem 0.6rem;
-}
-
-.site-header h1 {
-  font-family: "Anton", sans-serif;
-  font-weight: 400;
-  margin: 0;
-  font-size: 1.9rem;
-  letter-spacing: 0.02em;
-}
-
-.tagline { margin: 0.15rem 0 0; color: #ffd7e8; }
-.offline-hint { margin: 0; color: #ffb9d4; font-size: 0.9rem; text-align: right; }
-
-.editor {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) 320px;
-  gap: 1.25rem;
-  padding: 1.25rem 1.5rem;
-  align-items: start;
-}
-
-.stage canvas#preview {
-  width: 100%;
-  height: auto;
-  display: block;
-  border-radius: 0.5rem;
-  box-shadow: 0 18px 50px rgba(0, 0, 0, 0.55);
-  background: #2a0e2e;
-}
-
-.thumbs {
-  display: grid;
-  grid-template-columns: repeat(6, 1fr);
-  gap: 0.5rem;
-  margin-top: 0.75rem;
-}
-
-.thumb {
-  background: #2a0e2e;
-  border: 2px solid transparent;
-  border-radius: 0.45rem;
-  padding: 0.25rem;
-  cursor: pointer;
-  color: #ffd7e8;
-}
-
-.thumb canvas { width: 100%; height: auto; display: block; border-radius: 0.3rem; }
-.thumb span { font-family: "Archivo Black", sans-serif; font-size: 0.6rem; letter-spacing: 0.08em; }
-.thumb.active { border-color: #ffb03a; }
-
-.controls {
-  background: #2a0e2e;
-  border: 1px solid #571b4d;
-  border-radius: 0.75rem;
-  padding: 1rem;
-  display: flex;
-  flex-direction: column;
-  gap: 0.9rem;
-}
-
-.field { display: flex; flex-direction: column; gap: 0.4rem; }
-.field > span, .panel-box legend { font-family: "Archivo Black", sans-serif; font-size: 0.72rem; letter-spacing: 0.09em; color: #ffb9d4; }
-
-.field input[type="text"], .field select {
-  background: #1c081f;
-  color: #ffe9f4;
-  border: 1px solid #7a2c66;
-  border-radius: 0.4rem;
-  padding: 0.5rem 0.6rem;
-  font-size: 1rem;
-  width: 100%;
-}
-
-.chip-row { display: flex; flex-wrap: wrap; gap: 0.4rem; }
-
-.chip-btn, .button-row button, .upload-btn {
-  background: #3d1238;
-  color: #ffe9f4;
-  border: 1px solid #7a2c66;
-  border-radius: 999px;
-  padding: 0.42rem 0.8rem;
-  font-size: 0.85rem;
-  cursor: pointer;
-  text-align: center;
-}
-
-.chip-btn.active { background: linear-gradient(135deg, #ff5e9c, #ffb03a); color: #16040f; border-color: transparent; font-weight: 700; }
-
-.panel-box { border: 1px solid #571b4d; border-radius: 0.6rem; padding: 0.8rem; display: flex; flex-direction: column; gap: 0.7rem; margin: 0; }
-.slider { display: flex; flex-direction: column; gap: 0.25rem; font-size: 0.85rem; }
-.slider output { color: #ffb03a; font-variant-numeric: tabular-nums; }
-.slider input { width: 100%; accent-color: #ff5e9c; }
-
-.button-row { display: flex; gap: 0.4rem; }
-.button-row button { flex: 1; }
-
-button.primary {
-  background: linear-gradient(135deg, #ff5e9c, #ffb03a);
-  color: #16040f;
-  border: none;
-  border-radius: 0.6rem;
-  padding: 0.85rem;
-  font-family: "Archivo Black", sans-serif;
-  font-size: 1rem;
-  letter-spacing: 0.05em;
-  cursor: pointer;
-}
-
-.hint { color: #d9a4c2; font-size: 0.82rem; margin: 0; }
-.error-note { color: #ff8f8f; }
-.site-footer { padding: 0 1.5rem 1.5rem; color: #b987a3; font-size: 0.85rem; }
-
-/* Shot modes: the editor chrome goes away, the composition fills the
-   viewport exactly, so a capture at the shot's pixel size is the art. */
-body.shot-mode .site-header,
-body.shot-mode .editor,
-body.shot-mode .site-footer { display: none; }
-
-body.shot-mode { background: #2a0e2e; }
-
-.shot-stage {
+  font-family: 'Segoe UI', system-ui, sans-serif;
+  background: #12081f radial-gradient(1200px 600px at 70% -10%, #3b115f 0%, #12081f 55%) no-repeat;
+  color: #f5ead9;
   min-height: 100vh;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 2vmin;
-  padding: 2vmin;
 }
-
-.shot-stage[hidden] { display: none; }
-.shot-stage:has(.shot-canvas) { padding: 0; }
-
-.shot-canvas { max-width: 100vw; max-height: 100vh; width: auto; height: auto; }
-
-.size-cell { margin: 0; text-align: center; }
-.size-cell canvas { max-width: 30vw; max-height: 82vh; width: auto; height: auto; box-shadow: 0 10px 34px rgba(0,0,0,0.5); }
-.size-cell figcaption {
-  font-family: "Archivo Black", sans-serif;
-  color: #ffd7e8;
-  margin-top: 0.7rem;
-  font-size: 1rem;
-  letter-spacing: 0.06em;
+.topbar { padding: 20px 28px 6px; }
+.brand { font-family: 'Anton', sans-serif; font-size: 34px; letter-spacing: 1px; color: #ffb36b; }
+.brand span { color: #ff5e8a; }
+.tagline { margin: 2px 0 0; color: #cdb8e8; }
+.layout { display: flex; gap: 22px; align-items: flex-start; padding: 16px 28px 8px; }
+.controls { width: 348px; flex: 0 0 348px; display: flex; flex-direction: column; gap: 16px; }
+.group {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.09);
+  border-radius: 14px;
+  padding: 14px 16px;
 }
-
-/* ?shot=editor keeps the editor but trims it to a tidy frame. */
-body:has(.editor) .shot-stage:empty { display: none; }
-
-body.editor-shot .stage canvas#preview { width: min(100%, 56vh); margin: 0 auto; }
-body.editor-shot .editor { padding-top: 0.75rem; }
-
+.group h2 {
+  margin: 0 0 10px;
+  font-family: 'Archivo Black', sans-serif;
+  font-size: 13px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: #ffd9a0;
+}
+.field { display: block; margin-bottom: 10px; }
+.field > span {
+  display: block;
+  font-size: 12px;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: #b9a5d9;
+  margin-bottom: 5px;
+}
+.field input[type="text"] {
+  width: 100%;
+  padding: 9px 10px;
+  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  background: rgba(0, 0, 0, 0.35);
+  color: #fff;
+  font-size: 15px;
+}
+.field input[type="range"] { width: 100%; accent-color: #ff5e8a; }
+.hint { font-size: 12.5px; color: #a892c9; line-height: 1.45; margin: 4px 0 10px; }
+.seg { display: flex; gap: 6px; }
+.seg button, .exports button {
+  flex: 1;
+  padding: 8px 6px;
+  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  background: rgba(0, 0, 0, 0.3);
+  color: #e9dcff;
+  cursor: pointer;
+  font-size: 13px;
+}
+.seg button.on, .exports button:hover { background: #ff5e8a; border-color: #ff5e8a; color: #fff; }
+.seg-col { flex-direction: column; }
+.swatches { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.swatch {
+  border: 2px solid transparent;
+  border-radius: 10px;
+  padding: 4px;
+  background: rgba(0, 0, 0, 0.25);
+  cursor: pointer;
+  color: #f5ead9;
+}
+.swatch .chip { height: 34px; border-radius: 6px; margin-bottom: 5px; }
+.swatch.on { border-color: #ffb36b; }
+.swatch span { font-size: 12px; letter-spacing: 0.4px; }
+.panel-card {
+  border: 1px solid rgba(255, 255, 255, 0.10);
+  border-radius: 10px;
+  padding: 9px 10px;
+  margin-bottom: 8px;
+  background: rgba(0, 0, 0, 0.22);
+}
+.panel-card.selected { border-color: #ffb36b; }
+.panel-head { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 7px; }
+.panel-name { font-family: 'Archivo Black', sans-serif; font-size: 12px; letter-spacing: 1px; }
+.panel-badge { font-size: 11px; color: #ffd9a0; }
+.panel-sample {
+  width: 100%;
+  margin-bottom: 7px;
+  padding: 6px;
+  border-radius: 7px;
+  background: rgba(0, 0, 0, 0.35);
+  color: #fff;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+}
+.panel-upload { display: inline-block; font-size: 12.5px; color: #ffb36b; cursor: pointer; text-decoration: underline; margin-bottom: 7px; }
+.panel-zoom { display: flex; align-items: center; gap: 8px; font-size: 12px; color: #b9a5d9; }
+.panel-zoom input { flex: 1; accent-color: #ff5e8a; }
+.exports { display: flex; flex-direction: column; gap: 6px; }
+.stage-wrap { flex: 1; min-width: 0; text-align: center; }
+#stage {
+  max-width: 100%;
+  height: auto;
+  border-radius: 6px;
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.55);
+  cursor: grab;
+  touch-action: none;
+  background: #1a0b2e;
+}
+#stage:active { cursor: grabbing; }
+.stage-note { color: #a892c9; font-size: 12.5px; }
+.foot { padding: 10px 28px 22px; color: #8d76b8; font-size: 12px; }
+body.shot-cover .topbar, body.shot-cover .controls, body.shot-cover .foot, body.shot-cover .stage-note { display: none; }
+body.shot-cover .layout { padding: 0; }
+body.shot-cover .stage-wrap { display: flex; align-items: center; justify-content: center; min-height: 100vh; }
+body.shot-cover #stage { max-height: 100vh; cursor: default; box-shadow: none; border-radius: 0; }
 @media (max-width: 900px) {
-  .editor { grid-template-columns: 1fr; }
-  .thumbs { grid-template-columns: repeat(3, 1fr); }
+  .layout { flex-direction: column; }
+  .controls { width: 100%; flex: none; }
 }

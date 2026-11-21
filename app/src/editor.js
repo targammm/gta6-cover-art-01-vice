@@ -1,186 +1,158 @@
-// Vice Cover Maker — the editor page.
-// Wires the controls around the live canvas: words, grade, size, and
-// per-panel photo choice with crop sliders. Every change repaints the
-// one preview canvas from the one state object; the panel thumbnail
-// strip repaints too, each thumb a miniature cover crop of its panel.
+// Vice Cover Maker — the editor column.
+// Builds one control card per panel (sample picker, photo upload, zoom
+// slider) and turns drags on the cover itself into per-panel crop offsets.
 
-import { GRADES, SAMPLES, SIZES } from './config.js';
-import { fillAll, loadStateImages, resetState, shufflePanels } from './state.js';
-import { exportPng, panelRects, renderCover } from './cover.js';
+import { SAMPLES, changed, setPanelPhoto, setPanelSample, state } from './state.js';
+import { layoutFor } from './config.js';
+import { fitRect, panelRect } from './cover.js';
 
-const $ = (id) => document.getElementById(id);
+function el(tag, cls, text) {
+  const n = document.createElement(tag);
+  if (cls) n.className = cls;
+  if (text != null) n.textContent = text;
+  return n;
+}
 
-export function initEditor(state) {
-  const canvas = $('preview');
-  const thumbs = $('thumbs');
-  let images = new Map();
-  let activePanel = 0;
-  let ready = false;
+function clamp(v, lo, hi) {
+  return Math.min(hi, Math.max(lo, v));
+}
 
-  async function reloadImages() {
-    images = await loadStateImages(state);
-    ready = true;
-    paint();
-  }
+export function buildPanelCards(container, stage) {
+  state.panels.forEach((panel, i) => {
+    const card = el('div', 'panel-card');
+    card.dataset.index = String(i);
 
-  function paint() {
-    if (!ready) return;
-    renderCover(canvas, state, images);
-    paintThumbs();
-  }
+    const head = el('div', 'panel-head');
+    head.appendChild(el('span', 'panel-name', i === 0 ? 'Background' : `Panel ${i}`));
+    head.appendChild(el('span', 'panel-badge', 'Empty'));
+    card.appendChild(head);
 
-  // Each thumbnail shows its panel's photo under the same crop the
-  // cover uses, so the strip reads as a contact sheet of the layout.
-  function paintThumbs() {
-    thumbs.replaceChildren();
-    const rects = panelRects(360, 360);
-    state.panels.forEach((panel, i) => {
-      const cell = document.createElement('button');
-      cell.type = 'button';
-      cell.className = 'thumb' + (i === activePanel ? ' active' : '');
-      const mini = document.createElement('canvas');
-      mini.width = 120;
-      mini.height = 90;
-      const ctx = mini.getContext('2d');
-      const img = images.get(panel.custom || panel.src);
-      if (img && img.naturalWidth) {
-        const rect = { x: 0, y: 0, w: mini.width, h: mini.height };
-        const scale = Math.max(rect.w / img.naturalWidth, rect.h / img.naturalHeight) * panel.zoom;
-        const dw = img.naturalWidth * scale;
-        const dh = img.naturalHeight * scale;
-        ctx.drawImage(img, (rect.w - dw) / 2, (rect.h - dh) / 2, dw, dh);
-      }
-      const tag = document.createElement('span');
-      tag.textContent = panel.role;
-      cell.append(mini, tag);
-      cell.addEventListener('click', () => selectPanel(i));
-      thumbs.append(cell);
-      void rects;
+    const select = el('select', 'panel-sample');
+    select.appendChild(new Option('— sample photo —', ''));
+    for (const s of SAMPLES) select.appendChild(new Option(s.label, s.id));
+    select.addEventListener('change', () => {
+      if (select.value) setPanelSample(i, select.value);
     });
-  }
+    card.appendChild(select);
 
-  function selectPanel(i) {
-    activePanel = i;
-    syncPanelControls();
-    paintThumbs();
-  }
-
-  // ---- control wiring (part 2) -------------------------------------
-
-  function syncPanelControls() {
-    const panel = state.panels[activePanel];
-    $('panel-photo').value = panel.custom ? 'custom' : panel.src;
-    $('zoom').value = String(panel.zoom);
-    $('offset-x').value = String(panel.offsetX);
-    $('offset-y').value = String(panel.offsetY);
-    syncReadouts();
-  }
-
-  function syncReadouts() {
-    const panel = state.panels[activePanel];
-    $('zoom-out').textContent = panel.zoom.toFixed(2) + '×';
-    $('offset-x-out').textContent = panel.offsetX.toFixed(2);
-    $('offset-y-out').textContent = panel.offsetY.toFixed(2);
-    $('panel-name').textContent = panel.role;
-  }
-
-  function buildControls() {
-    const photoSel = $('panel-photo');
-    for (const s of SAMPLES) {
-      const opt = document.createElement('option');
-      opt.value = s.src;
-      opt.textContent = s.label;
-    photoSel.append(opt);
-    }
-    const customOpt = document.createElement('option');
-    customOpt.value = 'custom';
-    customOpt.textContent = 'Your upload';
-    photoSel.append(customOpt);
-
-    const gradeRow = $('grades');
-    for (const g of Object.values(GRADES)) {
-      const b = document.createElement('button');
-      b.type = 'button';
-      b.textContent = g.label;
-      b.className = 'chip-btn' + (state.grade === g.id ? ' active' : '');
-      b.addEventListener('click', () => {
-        state.grade = g.id;
-        gradeRow.querySelectorAll('button').forEach((x) => x.classList.toggle('active', x === b));
-        paint();
-      });
-      gradeRow.append(b);
-    }
-
-    const sizeRow = $('sizes');
-    for (const s of Object.values(SIZES)) {
-      const b = document.createElement('button');
-      b.type = 'button';
-      b.textContent = `${s.label} ${s.width}×${s.height}`;
-      b.className = 'chip-btn' + (state.size === s.id ? ' active' : '');
-      b.addEventListener('click', () => {
-        state.size = s.id;
-        sizeRow.querySelectorAll('button').forEach((x) => x.classList.toggle('active', x === b));
-        paint();
-      });
-      sizeRow.append(b);
-    }
-  }
-
-  function wireInputs() {
-    $('caption').addEventListener('input', (e) => { state.caption = e.target.value; paint(); });
-    $('sub-caption').addEventListener('input', (e) => { state.subCaption = e.target.value; paint(); });
-    $('panel-photo').addEventListener('change', (e) => {
-      const panel = state.panels[activePanel];
-      if (e.target.value !== 'custom') { panel.src = e.target.value; panel.custom = null; }
-      reloadImages();
+    const upload = el('label', 'panel-upload', 'Upload your photo');
+    const file = el('input');
+    file.type = 'file';
+    file.accept = 'image/*';
+    file.hidden = true;
+    file.addEventListener('change', () => {
+      if (file.files && file.files[0]) readIntoPanel(i, file.files[0]);
+      file.value = '';
     });
-    $('upload').addEventListener('change', (e) => {
-      const file = e.target.files && e.target.files[0];
-      if (!file) return;
-      const reader = new FileReader();
-      reader.onload = () => {
-        state.panels[activePanel].custom = String(reader.result);
-        syncPanelControls();
-        reloadImages();
-      };
-      reader.readAsDataURL(file);
-      e.target.value = '';
+    upload.appendChild(file);
+    card.appendChild(upload);
+
+    const zoomRow = el('label', 'panel-zoom');
+    zoomRow.appendChild(el('span', null, 'Zoom'));
+    const zoom = el('input');
+    zoom.type = 'range';
+    zoom.min = '1';
+    zoom.max = '2.6';
+    zoom.step = '0.01';
+    zoom.value = '1';
+    zoom.addEventListener('input', () => {
+      panel.zoom = Number(zoom.value);
+      changed();
     });
-    const bindSlider = (id, key) => {
-      $(id).addEventListener('input', (e) => {
-        state.panels[activePanel][key] = Number(e.target.value);
-        syncReadouts();
-        paint();
-      });
+    zoomRow.appendChild(zoom);
+    card.appendChild(zoomRow);
+
+    card.addEventListener('pointerdown', () => {
+      state.selected = i;
+      syncSelection();
+    });
+    container.appendChild(card);
+  });
+  wireCanvasDrag(stage);
+  syncSelection();
+}
+
+// Read a visitor's photo file locally (nothing leaves the browser) and put
+// it in the given panel.
+export function readIntoPanel(index, file) {
+  const reader = new FileReader();
+  reader.onload = () => {
+    setPanelPhoto(index, String(reader.result), file.name);
+    state.selected = index;
+    syncSelection();
+  };
+  reader.readAsDataURL(file);
+}
+
+export function refreshBadges() {
+  document.querySelectorAll('.panel-card').forEach((card) => {
+    const panel = state.panels[Number(card.dataset.index)];
+    const badge = card.querySelector('.panel-badge');
+    if (badge) badge.textContent = panel.img ? panel.name || 'Photo' : 'Empty';
+  });
+}
+
+export function syncSelection() {
+  document.querySelectorAll('.panel-card').forEach((card) => {
+    card.classList.toggle('selected', Number(card.dataset.index) === state.selected);
+  });
+  refreshBadges();
+}
+
+// Which panel sits under a canvas point? Later panels draw over earlier
+// ones, so the search runs from the front of the collage to the back.
+function panelAt(stage, x, y) {
+  const layout = layoutFor(state.sizeId);
+  for (let i = layout.length - 1; i >= 0; i--) {
+    const r = panelRect(layout, i, stage.width, stage.height);
+    if (x >= r.x && x <= r.x + r.w && y >= r.y && y <= r.y + r.h) return i;
+  }
+  return 0;
+}
+
+// Dragging on the cover reframes the panel under the pointer: the drag
+// distance is converted into the panel's crop offsets using the same
+// cover-fit geometry the renderer draws with. Files dropped on the cover
+// land in the panel under the drop point.
+function wireCanvasDrag(stage) {
+  let drag = null;
+  const toCanvas = (e) => {
+    const b = stage.getBoundingClientRect();
+    return {
+      x: ((e.clientX - b.left) * stage.width) / b.width,
+      y: ((e.clientY - b.top) * stage.height) / b.height,
     };
-    bindSlider('zoom', 'zoom');
-    bindSlider('offset-x', 'offsetX');
-    bindSlider('offset-y', 'offsetY');
-    $('fill-all').addEventListener('click', () => { fillAll(state); reloadImages(); });
-    $('shuffle').addEventListener('click', () => { shufflePanels(state); reloadImages(); });
-    $('reset').addEventListener('click', () => {
-      resetState(state);
-      $('caption').value = state.caption;
-      $('sub-caption').value = state.subCaption;
-      activePanel = 0;
-      syncPanelControls();
-      reloadImages();
-    });
-    $('export').addEventListener('click', () => {
-      const a = document.createElement('a');
-      a.href = exportPng(state, images);
-      a.download = `vice-cover-${state.size}.png`;
-      a.click();
-    });
-  }
-
-  buildControls();
-  wireInputs();
-  syncPanelControls();
-  // Repaint when the display fonts land: the first paint can beat
-  // Anton to the canvas, and the caption must not stay in fallback.
-  if (document.fonts && document.fonts.ready) {
-    document.fonts.ready.then(() => paint());
-  }
-  return reloadImages();
+  };
+  stage.addEventListener('pointerdown', (e) => {
+    const p = toCanvas(e);
+    const i = panelAt(stage, p.x, p.y);
+    state.selected = i;
+    syncSelection();
+    drag = { i, x: p.x, y: p.y };
+    stage.setPointerCapture(e.pointerId);
+  });
+  stage.addEventListener('pointermove', (e) => {
+    if (!drag) return;
+    const p = toCanvas(e);
+    const panel = state.panels[drag.i];
+    const rect = panelRect(layoutFor(state.sizeId), drag.i, stage.width, stage.height);
+    if (panel.img && panel.img.naturalWidth > 0) {
+      const f = fitRect(panel.img, rect, panel.zoom, panel.ox, panel.oy);
+      if (f.w > rect.w) panel.ox = clamp(panel.ox + ((p.x - drag.x) * 2) / (f.w - rect.w), -1, 1);
+      if (f.h > rect.h) panel.oy = clamp(panel.oy + ((p.y - drag.y) * 2) / (f.h - rect.h), -1, 1);
+    }
+    drag.x = p.x;
+    drag.y = p.y;
+    changed();
+  });
+  const end = () => { drag = null; };
+  stage.addEventListener('pointerup', end);
+  stage.addEventListener('pointercancel', end);
+  stage.addEventListener('dragover', (e) => e.preventDefault());
+  stage.addEventListener('drop', (e) => {
+    e.preventDefault();
+    const file = e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files[0];
+    if (!file) return;
+    readIntoPanel(panelAt(stage, toCanvas(e).x, toCanvas(e).y), file);
+  });
 }

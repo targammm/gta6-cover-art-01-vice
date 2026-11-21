@@ -1,303 +1,193 @@
-// Vice Cover Maker — the cover renderer.
-// Paints a state onto a canvas: six photo panels on a deep plum field,
-// a colour grade washed over everything, and the dressing that makes
-// it read as a game cover — caption, badge, chips, barcode, halftone,
-// grain and vignette. Pure canvas 2D, fully deterministic: the only
-// randomness comes from seeded streams in state.js.
+// Vice Cover Maker — the canvas renderer.
+// Draws the six-panel composition, the colour grade and the poster lettering
+// onto any 2D context at the requested size, and turns the result into a
+// downloadable PNG. The editor preview and the PNG export are the same
+// drawing at the same size, so what you see is exactly what you save.
 
-import { GRADES, SIZES, DEFAULTS } from './config.js';
-import { seededRandom } from './state.js';
+import { GAP, gradeById, layoutFor, sizeById } from './config.js';
 
-// Panel rectangles for a W x H cover. The hero takes roughly the top
-// left 61% x 61%; two panels stack in the remaining right column; the
-// last three split the bottom band. Thin gutters separate everything.
-export function panelRects(W, H) {
-  const g = Math.max(4, Math.round(Math.min(W, H) * DEFAULTS.gutterRatio));
-  const heroW = Math.round((W - g * 3) * 0.61);
-  const heroH = Math.round((H - g * 3) * 0.61);
-  const rightX = g + heroW + g;
-  const rightW = W - rightX - g;
-  const stackH = Math.floor((heroH - g) / 2);
-  const bottomY = g + heroH + g;
-  const bottomH = H - bottomY - g;
-  const bottomW = Math.floor((W - g * 4) / 3);
-  return [
-    { x: g, y: g, w: heroW, h: heroH },
-    { x: rightX, y: g, w: rightW, h: stackH },
-    { x: rightX, y: g + stackH + g, w: rightW, h: heroH - stackH - g },
-    { x: g, y: bottomY, w: bottomW, h: bottomH },
-    { x: g + (bottomW + g), y: bottomY, w: bottomW, h: bottomH },
-    { x: g + (bottomW + g) * 2, y: bottomY, w: W - g - (g + (bottomW + g) * 2), h: bottomH },
-  ];
+// Where a panel's window lands on a W×H canvas, inset by half the gap so
+// neighbouring windows share a single seam of background.
+export function panelRect(layout, index, W, H) {
+  const r = layout[index];
+  if (index === 0) return { x: 0, y: 0, w: W, h: H };
+  const gx = GAP * W;
+  const gy = GAP * W;
+  return {
+    x: r.x * W + gx / 2,
+    y: r.y * H + gy / 2,
+    w: r.w * W - gx,
+    h: r.h * H - gy,
+  };
 }
 
-// Draw one photo into a rect with cover-fit cropping: scale so the
-// image covers the rect (times the panel zoom), then slide it by the
-// panel offsets, expressed as fractions of the overflow.
-function drawPanelPhoto(ctx, img, rect, panel) {
-  if (!img || !img.naturalWidth) return;
-  const scale = Math.max(rect.w / img.naturalWidth, rect.h / img.naturalHeight) * panel.zoom;
-  const dw = img.naturalWidth * scale;
-  const dh = img.naturalHeight * scale;
-  const maxX = Math.max(0, (dw - rect.w) / 2);
-  const maxY = Math.max(0, (dh - rect.h) / 2);
-  const dx = rect.x + (rect.w - dw) / 2 + panel.offsetX * 2 * maxX;
-  const dy = rect.y + (rect.h - dh) / 2 + panel.offsetY * 2 * maxY;
+// Cover-fit geometry: scale the image so it fills the window, then let the
+// panel's zoom and drag offsets choose which part of the excess shows.
+export function fitRect(img, rect, zoom, ox, oy) {
+  const scale = Math.max(rect.w / img.naturalWidth, rect.h / img.naturalHeight) * zoom;
+  const w = img.naturalWidth * scale;
+  const h = img.naturalHeight * scale;
+  const x = rect.x + (rect.w - w) / 2 + (ox * (w - rect.w)) / 2;
+  const y = rect.y + (rect.h - h) / 2 + (oy * (h - rect.h)) / 2;
+  return { x, y, w, h };
+}
+
+// An empty panel still shows the house style: a sunset wash and its name.
+function placeholder(ctx, rect, label, W) {
+  const g = ctx.createLinearGradient(rect.x, rect.y, rect.x + rect.w, rect.y + rect.h);
+  g.addColorStop(0, '#2b1055');
+  g.addColorStop(0.55, '#7597de');
+  g.addColorStop(1, '#ff7e5f');
+  ctx.fillStyle = g;
+  ctx.fillRect(rect.x, rect.y, rect.w, rect.h);
+  ctx.fillStyle = 'rgba(255,255,255,0.88)';
+  ctx.font = `400 ${Math.max(13, W * 0.017)}px 'Archivo Black', sans-serif`;
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText((label || 'DROP A PHOTO').toUpperCase(), rect.x + rect.w / 2, rect.y + rect.h / 2);
+}
+
+function drawPanel(ctx, panel, rect, grade, W) {
   ctx.save();
   ctx.beginPath();
   ctx.rect(rect.x, rect.y, rect.w, rect.h);
   ctx.clip();
-  ctx.drawImage(img, dx, dy, dw, dh);
-  ctx.restore();
-}
-
-// The grade's two washes: a flat tint, then a deepening gradient.
-function applyGrade(ctx, W, H, grade) {
-  ctx.fillStyle = grade.wash;
-  ctx.fillRect(0, 0, W, H);
-  const grad = ctx.createLinearGradient(0, 0, 0, H);
-  grad.addColorStop(0, 'rgba(0,0,0,0)');
-  grad.addColorStop(1, grade.washDeep);
-  ctx.fillStyle = grad;
-  ctx.fillRect(0, 0, W, H);
-}
-
-// ---- dressing -------------------------------------------------------
-
-function roundRect(ctx, x, y, w, h, r) {
-  ctx.beginPath();
-  ctx.moveTo(x + r, y);
-  ctx.arcTo(x + w, y, x + w, y + h, r);
-  ctx.arcTo(x + w, y + h, x, y + h, r);
-  ctx.arcTo(x, y + h, x, y, r);
-  ctx.arcTo(x, y, x + w, y, r);
-  ctx.closePath();
-}
-
-// A small dark chip with the panel's role, top-left of every panel.
-function drawRoleChip(ctx, rect, role, grade, unit) {
-  const pad = unit * 0.9;
-  ctx.font = `700 ${Math.round(unit * 1.5)}px "Archivo Black", sans-serif`;
-  const tw = ctx.measureText(role).width;
-  const w = tw + pad * 2;
-  const h = unit * 2.6;
-  const x = rect.x + unit * 0.9;
-  const y = rect.y + unit * 0.9;
-  ctx.save();
-  ctx.fillStyle = 'rgba(16, 4, 20, 0.72)';
-  roundRect(ctx, x, y, w, h, h / 2);
-  ctx.fill();
-  ctx.strokeStyle = grade.accent;
-  ctx.lineWidth = Math.max(1, unit * 0.16);
-  ctx.stroke();
-  ctx.fillStyle = '#ffe9f4';
-  ctx.textBaseline = 'middle';
-  ctx.fillText(role, x + pad, y + h / 2 + unit * 0.12);
-  ctx.restore();
-}
-
-// Gradient scrim across the hero's lower band so the caption sits on
-// shadow, plus a field of halftone dots in the grade's ink colour.
-function drawHeroShade(ctx, hero, grade, unit) {
-  const bandH = hero.h * 0.52;
-  const grad = ctx.createLinearGradient(0, hero.y + hero.h - bandH, 0, hero.y + hero.h);
-  grad.addColorStop(0, 'rgba(10, 2, 14, 0)');
-  grad.addColorStop(1, 'rgba(10, 2, 14, 0.82)');
-  ctx.fillStyle = grad;
-  ctx.fillRect(hero.x, hero.y + hero.h - bandH, hero.w, bandH);
-
-  const gap = unit * 1.7;
-  const r = unit * 0.34;
-  ctx.fillStyle = grade.halftone;
-  const rows = Math.floor((hero.h * 0.30) / gap);
-  for (let row = 0; row < rows; row++) {
-    const y = hero.y + hero.h - unit * 1.2 - row * gap;
-    const cols = Math.floor(hero.w / gap);
-    for (let col = 0; col < cols; col++) {
-      const x = hero.x + gap * 0.6 + col * gap + (row % 2 ? gap / 2 : 0);
-      if (x > hero.x + hero.w - gap * 0.4) continue;
-      ctx.globalAlpha = 0.16 + 0.5 * (1 - row / Math.max(1, rows));
-      ctx.beginPath();
-      ctx.arc(x, y, r, 0, Math.PI * 2);
-      ctx.fill();
-    }
+  if (panel.img && panel.img.complete && panel.img.naturalWidth > 0) {
+    const f = fitRect(panel.img, rect, panel.zoom, panel.ox, panel.oy);
+    ctx.filter = grade.filter;
+    ctx.drawImage(panel.img, f.x, f.y, f.w, f.h);
+    ctx.filter = 'none';
+  } else {
+    placeholder(ctx, rect, panel.name, W);
   }
-  ctx.globalAlpha = 1;
+  ctx.restore();
+  ctx.strokeStyle = 'rgba(255,255,255,0.9)';
+  ctx.lineWidth = Math.max(2, W * 0.0035);
+  ctx.strokeRect(rect.x, rect.y, rect.w, rect.h);
 }
 
-// The circular badge: gold ring, plum face, two lines of type.
-function drawBadge(ctx, hero, unit) {
-  const r = unit * 5.4;
-  const cx = hero.x + hero.w - r - unit * 1.6;
-  const cy = hero.y + r + unit * 1.6;
+// The grade's light over the finished collage: a soft-light wash in the
+// grade's three colours, a shade pooling at the foot, and a vignette.
+function applyGrade(ctx, grade, W, H) {
   ctx.save();
-  ctx.beginPath();
-  ctx.arc(cx, cy, r, 0, Math.PI * 2);
-  ctx.fillStyle = 'rgba(24, 6, 28, 0.88)';
-  ctx.fill();
-  ctx.lineWidth = unit * 0.55;
-  ctx.strokeStyle = '#f5c542';
-  ctx.stroke();
-  ctx.lineWidth = unit * 0.16;
-  ctx.strokeStyle = 'rgba(245, 197, 66, 0.65)';
-  ctx.beginPath();
-  ctx.arc(cx, cy, r - unit * 0.85, 0, Math.PI * 2);
-  ctx.stroke();
-  ctx.fillStyle = '#f5c542';
-  ctx.textAlign = 'center';
-  ctx.font = `${Math.round(unit * 1.9)}px Anton, sans-serif`;
-  ctx.fillText('EST. 2026', cx, cy - unit * 0.4);
-  ctx.font = `${Math.round(unit * 1.45)}px "Archivo Black", sans-serif`;
-  ctx.fillStyle = '#ffe9f4';
-  ctx.fillText('LEONIDA', cx, cy + unit * 1.6);
+  ctx.globalCompositeOperation = 'soft-light';
+  const wash = ctx.createLinearGradient(0, 0, 0, H);
+  wash.addColorStop(0, grade.wash[0]);
+  wash.addColorStop(0.5, grade.wash[1]);
+  wash.addColorStop(1, grade.wash[2]);
+  ctx.fillStyle = wash;
+  ctx.fillRect(0, 0, W, H);
+  ctx.globalCompositeOperation = 'source-over';
+  const shade = ctx.createLinearGradient(0, H * 0.5, 0, H);
+  shade.addColorStop(0, 'rgba(10, 4, 24, 0)');
+  shade.addColorStop(1, `rgba(10, 4, 24, ${grade.shade})`);
+  ctx.fillStyle = shade;
+  ctx.fillRect(0, 0, W, H);
+  const vig = ctx.createRadialGradient(
+    W / 2, H / 2, Math.min(W, H) * 0.36,
+    W / 2, H / 2, Math.max(W, H) * 0.75,
+  );
+  vig.addColorStop(0, 'rgba(0, 0, 0, 0)');
+  vig.addColorStop(1, `rgba(5, 2, 16, ${grade.vignette})`);
+  ctx.fillStyle = vig;
+  ctx.fillRect(0, 0, W, H);
   ctx.restore();
 }
 
-// A barcode of seeded-but-fixed bars with microtext under it.
-function drawBarcode(ctx, hero, unit) {
-  const rand = seededRandom(61026);
-  const x0 = hero.x + unit * 1.6;
-  const h = unit * 3.4;
-  const y = hero.y + hero.h - h - unit * 1.8;
-  let x = x0;
-  ctx.save();
-  ctx.fillStyle = 'rgba(255, 240, 248, 0.92)';
-  const bgW = unit * 16.5;
-  ctx.fillRect(x0 - unit * 0.7, y - unit * 0.7, bgW, h + unit * 2.6);
-  ctx.fillStyle = '#16040f';
-  while (x < x0 + bgW - unit * 1.6) {
-    const w = unit * (0.22 + rand() * 0.75);
-    if (rand() > 0.32) ctx.fillRect(x, y, w, h);
-    x += w + unit * (0.18 + rand() * 0.3);
+// Shrink a font size until the text fits the cover's width.
+function fitFont(ctx, text, family, startPx, maxWidth) {
+  let px = startPx;
+  while (px > 10) {
+    ctx.font = `${px}px ${family}`;
+    if (ctx.measureText(text).width <= maxWidth) break;
+    px -= 2;
   }
-  ctx.font = `${Math.round(unit * 0.8)}px "Archivo Black", sans-serif`;
-  ctx.textAlign = 'left';
-  ctx.fillText('LEONIDA • VICE CITY • 2026', x0 - unit * 0.2, y + h + unit * 1.5);
-  ctx.restore();
+  return px;
 }
 
-// The "6 PANELS • 3 SIZES" pill, bottom-right of the whole cover.
-function drawPill(ctx, W, H, grade, unit) {
-  const label = '6 PANELS • 3 SIZES';
-  ctx.font = `700 ${Math.round(unit * 1.5)}px "Archivo Black", sans-serif`;
-  const w = ctx.measureText(label).width + unit * 2.6;
-  const h = unit * 3.1;
-  const x = W - w - unit * 1.6;
-  const y = H - h - unit * 1.6;
-  ctx.save();
-  ctx.fillStyle = 'rgba(16, 4, 20, 0.78)';
-  roundRect(ctx, x, y, w, h, h / 2);
-  ctx.fill();
-  ctx.strokeStyle = grade.accent;
-  ctx.lineWidth = Math.max(1, unit * 0.16);
-  ctx.stroke();
-  ctx.fillStyle = '#ffe9f4';
-  ctx.textBaseline = 'middle';
-  ctx.fillText(label, x + unit * 1.3, y + h / 2 + unit * 0.1);
-  ctx.restore();
-}
-
-// Caption and sub-caption over the hero's shaded lower band. The
-// caption auto-fits: Anton, shrunk until it fits the hero width, with
-// a pink-to-orange (per-grade) gradient fill, a dark outline and a
-// neon glow in the grade's glow colour.
-function drawCaption(ctx, hero, state, grade, unit) {
-  const caption = (state.caption || '').toUpperCase() || 'VICE CITY';
-  const cx = hero.x + hero.w / 2;
-  let size = unit * 11;
+// Poster lettering: the caption in Anton with a thick dark outline, a warm
+// gradient fill and a soft drop shadow; the subtitle in letterspaced
+// Archivo Black underneath it.
+function drawLettering(ctx, st, W, H) {
+  const caption = (st.caption || '').toUpperCase();
+  const subtitle = (st.subtitle || '').toUpperCase();
+  if (!caption) return;
+  const top = st.captionPos === 'top';
   ctx.save();
   ctx.textAlign = 'center';
-  const setFont = (s) => { ctx.font = `${Math.round(s)}px Anton, sans-serif`; };
-  setFont(size);
-  const maxW = hero.w * 0.92;
-  while (ctx.measureText(caption).width > maxW && size > unit * 2) {
-    size *= 0.94;
-    setFont(size);
-  }
-  const baseY = hero.y + hero.h - unit * 11.5;
-  const grad = ctx.createLinearGradient(hero.x, baseY - size, hero.x + hero.w, baseY);
-  grad.addColorStop(0, grade.captionFrom);
-  grad.addColorStop(1, grade.captionTo);
+  ctx.textBaseline = 'alphabetic';
+  const px = fitFont(ctx, caption, `'Anton', sans-serif`, H * 0.118 * st.captionSize, W * 0.92);
+  ctx.font = `${px}px 'Anton', sans-serif`;
+  const y = top ? H * 0.055 + px : H * 0.9;
+  const fill = ctx.createLinearGradient(0, y - px, 0, y);
+  fill.addColorStop(0, '#ffffff');
+  fill.addColorStop(0.7, '#ffe9c4');
+  fill.addColorStop(1, '#ffb36b');
+  ctx.shadowColor = 'rgba(0, 0, 0, 0.5)';
+  ctx.shadowBlur = px * 0.1;
+  ctx.shadowOffsetY = px * 0.045;
   ctx.lineJoin = 'round';
-  ctx.shadowColor = grade.glow;
-  ctx.shadowBlur = unit * 2.4;
-  ctx.strokeStyle = 'rgba(20, 2, 16, 0.95)';
-  ctx.lineWidth = size * 0.16;
-  ctx.strokeText(caption, cx, baseY);
+  ctx.strokeStyle = '#180a2c';
+  ctx.lineWidth = px * 0.16;
+  ctx.strokeText(caption, W / 2, y);
+  ctx.shadowColor = 'transparent';
   ctx.shadowBlur = 0;
-  ctx.fillStyle = grad;
-  ctx.fillText(caption, cx, baseY);
-
-  const sub = (state.subCaption || '').toUpperCase();
-  if (sub) {
-    ctx.font = `${Math.round(unit * 1.9)}px "Archivo Black", sans-serif`;
-    try { ctx.letterSpacing = `${Math.round(unit * 0.9)}px`; } catch { /* older canvas */ }
-    ctx.fillStyle = '#ffd7e8';
-    ctx.shadowColor = grade.glow;
-    ctx.shadowBlur = unit * 0.8;
-    ctx.fillText(sub, cx, baseY + unit * 3.4);
+  ctx.shadowOffsetY = 0;
+  ctx.fillStyle = fill;
+  ctx.fillText(caption, W / 2, y);
+  if (subtitle) {
+    const spx = px * 0.3;
+    ctx.font = `${spx}px 'Archivo Black', sans-serif`;
+    try { ctx.letterSpacing = `${Math.round(spx * 0.22)}px`; } catch { /* older canvas */ }
+    const sy = y + spx * 1.55;
+    ctx.lineWidth = spx * 0.14;
+    ctx.strokeStyle = 'rgba(24, 10, 44, 0.9)';
+    ctx.strokeText(subtitle, W / 2, sy);
+    ctx.fillStyle = '#ffe9c9';
+    ctx.fillText(subtitle, W / 2, sy);
+    try { ctx.letterSpacing = '0px'; } catch { /* ignore */ }
   }
   ctx.restore();
 }
 
-// Seeded grain (fixed seed: identical every render) and a vignette.
-function drawGrainAndVignette(ctx, W, H, unit) {
-  const rand = seededRandom(90210);
-  const dots = Math.floor((W * H) / 2600);
-  ctx.save();
-  for (let i = 0; i < dots; i++) {
-    const x = rand() * W;
-    const y = rand() * H;
-    ctx.fillStyle = rand() > 0.5 ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.07)';
-    ctx.fillRect(x, y, unit * 0.32, unit * 0.32);
+// Draw the whole cover described by state `st` onto ctx at W×H: background
+// first, collage windows over it, then the grade's light, a trim line like
+// the printed poster's edge, and the lettering on top of everything.
+export function renderCover(ctx, st, W, H) {
+  const grade = gradeById(st.gradeId);
+  const layout = layoutFor(st.sizeId);
+  ctx.clearRect(0, 0, W, H);
+  for (let i = 0; i < layout.length; i++) {
+    drawPanel(ctx, st.panels[i], panelRect(layout, i, W, H), grade, W);
   }
-  const vg = ctx.createRadialGradient(W / 2, H / 2, Math.min(W, H) * 0.42, W / 2, H / 2, Math.max(W, H) * 0.78);
-  vg.addColorStop(0, 'rgba(0,0,0,0)');
-  vg.addColorStop(1, 'rgba(8, 0, 10, 0.42)');
-  ctx.fillStyle = vg;
-  ctx.fillRect(0, 0, W, H);
-  ctx.restore();
+  applyGrade(ctx, grade, W, H);
+  ctx.strokeStyle = 'rgba(255, 255, 255, 0.95)';
+  ctx.lineWidth = Math.max(3, W * 0.005);
+  ctx.strokeRect(ctx.lineWidth / 2, ctx.lineWidth / 2, W - ctx.lineWidth, H - ctx.lineWidth);
+  drawLettering(ctx, st, W, H);
 }
 
-// Paint the whole cover for a state onto a canvas of the state's size.
-export function renderCover(canvas, state, images) {
-  const size = SIZES[state.size] || SIZES.square;
-  canvas.width = size.width;
-  canvas.height = size.height;
-  const ctx = canvas.getContext('2d');
-  const W = size.width;
-  const H = size.height;
-  const unit = Math.min(W, H) / 100;
-  const grade = GRADES[state.grade] || GRADES.sunset;
-
-  ctx.fillStyle = DEFAULTS.background;
-  ctx.fillRect(0, 0, W, H);
-
-  const rects = panelRects(W, H);
-  state.panels.forEach((panel, i) => {
-    const img = images.get(panel.custom || panel.src);
-    drawPanelPhoto(ctx, img, rects[i], panel);
-  });
-
-  applyGrade(ctx, W, H, grade);
-
-  // A bright accent rule under the hero, in the grade's accent colour.
-  ctx.fillStyle = grade.accent;
-  ctx.fillRect(rects[0].x, rects[0].y + rects[0].h - unit * 0.55, rects[0].w, unit * 0.55);
-
-  drawHeroShade(ctx, rects[0], grade, unit);
-  state.panels.forEach((panel, i) => drawRoleChip(ctx, rects[i], panel.role, grade, unit));
-  drawBadge(ctx, rects[0], unit);
-  drawBarcode(ctx, rects[0], unit);
-  drawCaption(ctx, rects[0], state, grade, unit);
-  drawPill(ctx, W, H, grade, unit);
-  drawGrainAndVignette(ctx, W, H, unit);
-  return canvas;
-}
-
-// Render to an offscreen canvas and hand back a PNG data URL.
-export function exportPng(state, images) {
+// Render the current state onto a fresh canvas at the state's own size and
+// hand back the PNG blob.
+export function exportPNG(st) {
+  const size = sizeById(st.sizeId);
   const canvas = document.createElement('canvas');
-  renderCover(canvas, state, images);
-  return canvas.toDataURL('image/png');
+  canvas.width = size.w;
+  canvas.height = size.h;
+  renderCover(canvas.getContext('2d'), st, size.w, size.h);
+  return new Promise((resolve) => canvas.toBlob(resolve, 'image/png'));
+}
+
+// Save the current cover as a PNG download in the browser.
+export async function downloadCover(st, filename) {
+  const blob = await exportPNG(st);
+  if (!blob) return;
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 4000);
 }

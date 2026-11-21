@@ -1,8 +1,8 @@
 # Vice Cover Maker — local build output, scratch and captures
-out/
-out2/
 node_modules/
-.DS_Store
+out/
+/output/
 *.log
-tmp/
-*.png.tmp
+*.tmp
+.DS_Store
+Thumbs.db

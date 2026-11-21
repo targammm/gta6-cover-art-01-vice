@@ -1,82 +1,46 @@
 # Vice Cover Maker
 
-[![gta6-cover-art-01](https://make.fun/badge/gta6-cover-art-01.svg)](https://make.fun/bounty/gta6-cover-art-01)
-[![rank](https://make.fun/badge/gta6-cover-art-01/targammm/gta6-cover-art-01-vice/rank.svg)](https://make.fun/bounty/gta6-cover-art-01)
-[![reward](https://make.fun/badge/gta6-cover-art-01/targammm/gta6-cover-art-01-vice/reward.svg)](https://make.fun/bounty/gta6-cover-art-01)
+A small, fully offline web app that turns your own photos and a caption into
+cover art in the style of a GTA 6 poster: a six-panel collage — one full-bleed
+background photo plus five framed windows — under a Vice City sunset or neon
+colour grade, with bold poster lettering across the top or bottom.
 
-A six-panel cover studio in the browser. Drop in your own photos, pick a
-grade, and export a sunset-drenched, Leonida-style game cover at full
-resolution — no uploads, no server, no build step.
-
-## Features
-
-- **Six-panel layout** — a big hero panel, two stacked panels and a
-  three-panel strip, on a deep plum field with thin gutters.
-- **Any photo, every panel** — six bundled Vice City-mood samples, plus
-  per-panel upload of your own photos (read locally with FileReader;
-  nothing ever leaves the page).
-- **Per-panel crop control** — zoom from 0.8× to 2.5× and X/Y offsets
-  per panel, with a clickable thumbnail strip to pick the panel you are
-  editing.
-- **Four colour grades** — Sunset, Neon, Midnight and Palm, each a wash,
-  accent, halftone ink and caption glow mixed over the whole cover.
-- **Full cover dressing** — auto-fit gradient caption in Anton, a
-  letterspaced sub-caption, an EST. 2026 / LEONIDA badge, role chips on
-  every panel (HERO, CHASE, HEIST, VICE, CREW, GETAWAY), a deterministic
-  barcode with microtext, halftone dots, seeded grain and a vignette.
-- **Three export sizes** — PNG at 1080×1080, 1080×1350 and 1920×1080,
-  rendered deterministically: the same state always paints the same
-  cover, byte for byte.
-- **Fill all, shuffle, reset** — one click to restock every panel.
-
-## How to run
-
-You need Node 22 or newer. From the repository root:
+## Run it
 
 ```
 node serve.ts
 ```
 
-Then open http://localhost:8080 in a browser. The app is fully static
-and works offline once loaded; there is nothing to install and nothing
-to build.
+then open http://localhost:8080. Or serve the `app/` folder with any static
+file server. There is no build step and no network use: photos are read
+locally in the browser and never uploaded anywhere.
 
-To package the entry the way the make.fun scorer sees it:
+For the make.fun hand-in, `node main.ts` copies `app/` and `screenshots/`
+into the output directory (`/output`, or `$MAKEFUN_OUTPUT_DIR`) and writes
+`dossier.json` there.
 
-```
-MAKEFUN_OUTPUT_DIR=out node main.ts
-```
+## Features
 
-That copies `app/` and `screenshots/` into the output directory and
-writes its `dossier.json` with the vendored `buildDossier`.
+- **Six-panel composition** — a full-bleed background plus five framed
+  collage windows, with layouts tuned per aspect ratio.
+- **Any photo in any panel** — pick from the six bundled Vice City samples or
+  upload your own photo per panel (file picker or drag-and-drop onto the
+  cover). One photo can fill several panels, or each panel gets its own.
+- **Reframe by hand** — per-panel zoom sliders, and drag a panel directly on
+  the cover to choose its crop.
+- **Poster lettering** — an editable caption in Anton with a thick outline,
+  warm gradient fill and soft shadow, plus a letterspaced Archivo Black
+  subtitle; caption position (top/bottom) and size are adjustable.
+- **Four colour grades** — Sunset, Neon Nights, Dusk and Clean, each a photo
+  filter plus a soft-light wash, foot shade and vignette.
+- **Full-size PNG export** — 1080 × 1080, 1080 × 1350 and 1920 × 1080,
+  rendered from the same canvas composition as the preview.
 
-## Screenshots
+The six sample photos are original drawings generated for this app, and the
+poster fonts are Anton and Archivo Black under the SIL Open Font License 1.1
+(see `app/fonts/OFL.txt`).
 
-- `screenshots/1-cover.jpg` — the wide cover, straight from the renderer.
-- `screenshots/2-editor.jpg` — the editor page with a live cover.
-- `screenshots/3-cover-portrait.jpg` — the portrait cover.
-- `screenshots/4-sizes.jpg` — all three export sizes side by side.
+## License
 
-Each was captured from the app's own `?shot=` modes (see `shots.json`).
-
-## Fonts and licence
-
-The app code is MIT-licensed (see `LICENSE`). The two display fonts are
-vendored under `app/fonts/` and are **not** MIT: Anton by Vernon Adams
-and Archivo Black by Omnibus-Type are licensed under the SIL Open Font
-License 1.1, whose full text sits beside them in `app/fonts/OFL.txt`.
-The sample photos were generated for this entry.
-
-## Build notes
-
-- Plain ES modules under `app/src/` (`config`, `state`, `cover`,
-  `editor`, `shots`, `main`) — no framework, no bundler, no network.
-- Rendering is deterministic: grain, barcode and shuffle all draw from
-  seeded streams, never from `Math.random` or the clock.
-- Round 2 rebuild: the whole entry was re-authored in a fresh recorded
-  session for the make.fun gta6-cover-art-01 competition.
-
----
-
-Entered on [make.fun](https://make.fun/?ref=c5ppnbr2) — Vice Cover Maker,
-for the gta6-cover-art-01 bounty.
+MIT — see `LICENSE`. A fan-made toy for your own photos; not affiliated with
+Rockstar Games or Take-Two Interactive.

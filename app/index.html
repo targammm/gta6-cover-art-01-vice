@@ -3,90 +3,57 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Vice Cover Maker — six-panel GTA-style cover studio</title>
-<meta name="description" content="Build a six-panel, sunset-drenched game cover from your own photos. Offline, instant, exports at 1080×1080, 1080×1350 and 1920×1080.">
+<title>Vice Cover Maker — GTA-style cover art studio</title>
 <link rel="stylesheet" href="style.css">
 </head>
 <body>
-<header class="site-header">
-  <div class="brand">
-    <span class="brand-mark">VC</span>
-    <div>
-      <h1>Vice Cover Maker</h1>
-      <p class="tagline">Six panels. One sunset. Your photos, Leonida style.</p>
-    </div>
-  </div>
-  <p class="offline-hint">Works fully offline — photos never leave this page.</p>
+<header class="topbar">
+  <div class="brand">VICE <span>COVER MAKER</span></div>
+  <p class="tagline">Your photos, posterised into a six-panel Vice City cover.</p>
 </header>
-
-<main id="editor" class="editor">
-  <section class="stage" aria-label="Cover preview">
-    <canvas id="preview" width="1080" height="1080"></canvas>
-    <div id="thumbs" class="thumbs" aria-label="Panels"></div>
-    <p id="error-note" class="error-note" hidden></p>
-  </section>
-
-  <aside class="controls" aria-label="Cover controls">
-    <label class="field">
-      <span>Caption</span>
-      <input id="caption" type="text" value="VICE CITY" maxlength="24" autocomplete="off">
-    </label>
-    <label class="field">
-      <span>Sub-caption</span>
-      <input id="sub-caption" type="text" value="A SUNSET STORY" maxlength="32" autocomplete="off">
-    </label>
-
-    <div class="field">
-      <span>Grade</span>
-      <div id="grades" class="chip-row" role="group" aria-label="Colour grade"></div>
-    </div>
-
-    <div class="field">
-      <span>Export size</span>
-      <div id="sizes" class="chip-row" role="group" aria-label="Export size"></div>
-    </div>
-
-    <fieldset class="field panel-box">
-      <legend>Panel — <span id="panel-name">HERO</span></legend>
-      <label class="field">
-        <span>Photo</span>
-        <select id="panel-photo"></select>
-      </label>
-      <label class="upload-btn">
-        Upload your photo
-        <input id="upload" type="file" accept="image/*" hidden>
-      </label>
-      <label class="slider">
-        <span>Zoom <output id="zoom-out">1.00×</output></span>
-        <input id="zoom" type="range" min="0.8" max="2.5" step="0.01" value="1">
-      </label>
-      <label class="slider">
-        <span>Shift X <output id="offset-x-out">0.00</output></span>
-        <input id="offset-x" type="range" min="-0.5" max="0.5" step="0.01" value="0">
-      </label>
-      <label class="slider">
-        <span>Shift Y <output id="offset-y-out">0.00</output></span>
-        <input id="offset-y" type="range" min="-0.5" max="0.5" step="0.01" value="0">
-      </label>
-    </fieldset>
-
-    <div class="button-row">
-      <button id="fill-all" type="button">Fill all panels</button>
-      <button id="shuffle" type="button">Shuffle</button>
-      <button id="reset" type="button">Reset</button>
-    </div>
-
-    <button id="export" type="button" class="primary">Export PNG</button>
-    <p class="hint">Tip: click a thumbnail under the preview to pick which panel you are editing. Exports render at full resolution, exactly as previewed.</p>
+<main class="layout">
+  <aside class="controls">
+    <section class="group">
+      <h2>Lettering</h2>
+      <label class="field"><span>Caption</span><input id="caption" type="text" maxlength="26" value="VICE CITY"></label>
+      <label class="field"><span>Subtitle</span><input id="subtitle" type="text" maxlength="34" value="EST. 1986 · LEONIDA"></label>
+      <div class="field"><span>Caption position</span>
+        <div class="seg" id="posSeg">
+          <button type="button" data-pos="top">Top</button>
+          <button type="button" data-pos="bottom" class="on">Bottom</button>
+        </div>
+      </div>
+      <label class="field"><span>Caption size</span><input id="captionSize" type="range" min="0.6" max="1.5" step="0.02" value="1"></label>
+    </section>
+    <section class="group">
+      <h2>Colour grade</h2>
+      <div class="swatches" id="grades"></div>
+    </section>
+    <section class="group">
+      <h2>Canvas size</h2>
+      <div class="seg seg-col" id="sizes"></div>
+    </section>
+    <section class="group">
+      <h2>Panels</h2>
+      <p class="hint">Give every panel a sample or your own photo, zoom it with the slider, and drag the cover itself to reframe the panel you grab.</p>
+      <div id="panels"></div>
+    </section>
+    <section class="group">
+      <h2>Export PNG</h2>
+      <div class="exports">
+        <button type="button" data-export="square">Square · 1080 × 1080</button>
+        <button type="button" data-export="portrait">Portrait · 1080 × 1350</button>
+        <button type="button" data-export="landscape">Wide · 1920 × 1080</button>
+      </div>
+      <p class="hint">Exports render at full size from the same composition as the preview — no server, your photos never leave the browser.</p>
+    </section>
   </aside>
+  <section class="stage-wrap">
+    <canvas id="stage" width="1080" height="1080"></canvas>
+    <p class="stage-note">Drag any panel on the cover to reframe it.</p>
+  </section>
 </main>
-
-<section id="shot-stage" class="shot-stage" hidden></section>
-
-<footer class="site-footer">
-  <p>Vice Cover Maker — a fan-made cover studio. Fonts: Anton and Archivo Black, SIL Open Font License 1.1.</p>
-</footer>
-
+<footer class="foot">A fan-made toy for your own photos. Not affiliated with Rockstar Games or Take-Two Interactive. Poster fonts: Anton and Archivo Black, SIL Open Font License 1.1.</footer>
 <script type="module" src="src/main.js"></script>
 </body>
 </html>
